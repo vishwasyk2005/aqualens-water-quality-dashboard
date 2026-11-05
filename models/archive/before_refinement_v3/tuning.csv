@@ -1,0 +1,3 @@
+window,hidden,lr,candidate,best_epoch,validation_loss,epochs_run
+12,24,0.003,1,37,0.057330865412950516,55
+8,32,0.001,2,51,0.05483340099453926,69

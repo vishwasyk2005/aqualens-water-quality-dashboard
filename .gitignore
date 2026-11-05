@@ -1,0 +1,13 @@
+.venv/
+__pycache__/
+*.pyc
+models/custom/
+data/private/
+web/AquaLens-Dashboard.zip
+
+.runtime-temp/
+# Python and local runtime caches
+**/__pycache__/
+*.py[cod]
+.pytest_cache/
+.runtime-temp/

@@ -1,0 +1,81 @@
+{
+  "format_version": 3,
+  "model_family": "DET",
+  "fit_data_fingerprint": "5171c73277d0f479c2ddabc3d84d44dc888563d8362f6df78bb195e95bfc8004",
+  "train_end": "2021-06-30",
+  "validation_end": "2021-12-31",
+  "fit_available_from": "2021-06-26",
+  "selection_lock_date": "2021-12-27",
+  "selection_criterion": "Mean of nine validation RMSE values (3 parameters x 3 native horizons), each divided by its training-only pooled within-zone temporal standard deviation; every task has equal weight.",
+  "seed": 42,
+  "max_epochs": 200,
+  "patience": 25,
+  "configs": [
+    {
+      "candidate": 1,
+      "mode": "anchored",
+      "window": 8,
+      "hidden": 16,
+      "dropout": 0.0,
+      "lr": 0.001,
+      "weight_decay": 0.01,
+      "loss": "mse"
+    },
+    {
+      "candidate": 2,
+      "mode": "anchored",
+      "window": 12,
+      "hidden": 24,
+      "dropout": 0.1,
+      "lr": 0.001,
+      "weight_decay": 0.01,
+      "loss": "mse"
+    },
+    {
+      "candidate": 3,
+      "mode": "anchored",
+      "window": 8,
+      "hidden": 24,
+      "dropout": 0.1,
+      "lr": 0.003,
+      "weight_decay": 0.001,
+      "loss": "smooth_l1"
+    },
+    {
+      "candidate": 4,
+      "mode": "direct",
+      "window": 8,
+      "hidden": 16,
+      "dropout": 0.1,
+      "lr": 0.001,
+      "weight_decay": 0.01,
+      "loss": "mse"
+    },
+    {
+      "candidate": 5,
+      "mode": "direct",
+      "window": 12,
+      "hidden": 24,
+      "dropout": 0.1,
+      "lr": 0.001,
+      "weight_decay": 0.01,
+      "loss": "mse"
+    },
+    {
+      "candidate": 6,
+      "mode": "direct",
+      "window": 12,
+      "hidden": 32,
+      "dropout": 0.0,
+      "lr": 0.001,
+      "weight_decay": 0.001,
+      "loss": "smooth_l1"
+    }
+  ],
+  "held_out_after_validation_loaded": false,
+  "held_out_after_validation_scored": false,
+  "held_out_2022_loaded": false,
+  "held_out_2022_scored": false,
+  "objective": "MSE or SmoothL1 over errors divided by training-only within-zone temporal standard deviation, as predeclared per candidate.",
+  "predictions": "Unconstrained raw DET outputs; no clipping, smoothing or post-test curve adjustment."
+}

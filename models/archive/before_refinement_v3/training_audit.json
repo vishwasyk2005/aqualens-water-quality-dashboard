@@ -1,0 +1,58 @@
+{
+  "original_cells": 981,
+  "model_cells": 28,
+  "zones": 6,
+  "observation_dates": 143,
+  "date_start": "2020-01-01",
+  "date_end": "2023-02-10",
+  "median_cadence_days": 8.0,
+  "invalid_ndwi_excluded": 2476,
+  "known_low_coverage_excluded": 0,
+  "spatial_aggregation": "6 by 6 geographic grid intersected with zones",
+  "missing_cell_parameter_fraction": 0.03771228771228771,
+  "negative_proxy_values_retained": "Algorithm and units are unverified; no physical concentration assumption is made.",
+  "source_file_sha256": "d34f086580a512d91a95f629657e7fe8d0ff637e606711f43a46e16f39e28a6b",
+  "source_rows": 46755,
+  "loader_report": {
+    "input_rows": 46755,
+    "rows": 46755,
+    "invalid_rows": 0,
+    "duplicate_rows": 0,
+    "cells": 981,
+    "zones": 6,
+    "lake_id": "legacy_lake",
+    "source": "legacy_upload",
+    "start": "2020-01-01",
+    "end": "2023-02-10",
+    "periods": 143,
+    "missing_fraction": 0.0176523010016754,
+    "original_missing_fraction": 0.0176523010016754,
+    "observed_fraction": 1.0,
+    "coverage": null,
+    "warnings": [
+      "Zones inferred from a 3x2 geographic grid; provide zone_id for meaningful boundaries.",
+      "Legacy raw values retained; NDWI outside [-1,1] excluded from analysis. Source algorithms and units unverified; do not mix with Sentinel-2 proxies.",
+      "2476 NDWI values outside [-1,1] excluded, with raw values preserved. They are not filled or capped.",
+      "Negative turbidity/chlorophyll source values exist. Units and retrieval formulas need verification; values are retained as unverified proxies.",
+      "Some pixel coverage is unknown; unknown coverage is not treated as 100%.",
+      "Long or leading gaps remain missing; models require usable contiguous windows."
+    ],
+    "ndwi_invalid_count": 2476,
+    "proxy_negative_count": 1785,
+    "coverage_unknown_fraction": 1.0,
+    "parameter_observed_fraction": {
+      "ndwi": 0.9470430969949738,
+      "turbidity_proxy": 1.0,
+      "chlorophyll_proxy": 1.0
+    },
+    "cadence_days": 8.0,
+    "units": "Unverified source proxy scale; no physical concentration or safety claim"
+  },
+  "model_input_checksum": "a6a0c4204404d16ed79e86b0a26483fae678c5d705b2d7827c30d5e172f71902",
+  "fingerprint_migration": {
+    "reason": "Include parameter observation flags, raw measurements and geographic coordinates in model compatibility checks.",
+    "old_fingerprint": "8091b72bad2f7deb8ed91ecb4a563387bcbf71c4c0581bdef360aea61d132658",
+    "new_fingerprint": "9157b8c74454d4a0180e0abacdc366cabc1bf9ab7d9cd61df751af12ef930d9b",
+    "verified": "Original training fingerprint matched; raw, filled, target, age arrays and hierarchy unchanged. Metadata update only; trained weights unchanged."
+  }
+}

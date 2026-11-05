@@ -1,0 +1,27 @@
+/* Geographic map data regression checks; no browser or remote tiles needed. */
+const fs=require('fs'),vm=require('vm'),assert=require('assert');
+const root=__dirname+'/..';
+const context={window:{},console};vm.createContext(context);
+vm.runInContext(fs.readFileSync(root+'/web/water-map.js','utf8'),context);
+const map=context.window.AquaLensMap;
+const data=JSON.parse(fs.readFileSync(root+'/web/demo-state.json','utf8'));
+const rows=data.observations;
+const latest=map.selectReadings(rows,{date:'2023-02-10',parameter:'turbidity_proxy'});
+assert.strictEqual(latest.length,326,'Latest-date map must not mix historical sample positions');
+assert(latest.every(r=>r.date.slice(0,10)==='2023-02-10'));
+const ndwi=map.selectReadings(rows,{date:'2023-02-10',parameter:'ndwi'});
+assert.strictEqual(ndwi.length,311,'Invalid NDWI must not appear as colored observations');
+assert(ndwi.every(r=>r.ndwi>=-1&&r.ndwi<=1));
+const z2=map.selectReadings(rows,{date:'2023-02-10',parameter:'turbidity_proxy',scope:'Z2'});
+assert(z2.length>0&&z2.length<latest.length&&z2.every(r=>r.zone_id==='Z2'));
+const older=map.selectReadings(rows,{date:'2020-01-01',parameter:'turbidity_proxy'});
+assert(older.length>0&&older.every(r=>r.date.slice(0,10)==='2020-01-01'));
+assert.strictEqual(map.selectReadings(rows,{date:'2025-01-01',parameter:'ndwi'}).length,0);
+const unmeasured={date:'2023-02-10',lat:9,lon:76,ndwi:.5,ndwi_is_observed:false};
+assert.strictEqual(map.selectReadings([unmeasured],{date:'2023-02-10',parameter:'ndwi'}).length,0);
+const unknownCoordinates={...unmeasured,ndwi_is_observed:true,lat:null};
+assert.strictEqual(map.selectReadings([unknownCoordinates],{date:'2023-02-10',parameter:'ndwi'}).length,0);
+const domain=map.colorDomain(ndwi,'ndwi');assert(domain.min>=-1&&domain.max<=1);
+const html=map.markup({large:true});
+assert(html.includes('data-map-timeline')&&html.includes('data-map-base')&&html.includes('data-map-fit')&&html.includes('data-map-expand'));
+console.log('Map data checks passed: 326 latest points, 311 valid NDWI, exact-date and zone filters, no imputed/invalid coordinates, real ranges, map controls.');

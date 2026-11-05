@@ -1,0 +1,1 @@
+Archived baseline before DET v3 refinement. These original historical scores and weights remain as an audit trail. Early validation-origin availability and coordinate-grid jitter were identified from pre-2022 data after this version was produced. Active model files are stored outside this archive. Do not treat archived results as updated forecasting claims.

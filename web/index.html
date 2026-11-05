@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<meta name="theme-color" content="#102d35"><meta name="description" content="AquaLens — understand recorded water conditions, explore the lake, inspect evidence, and look ahead with DET.">
+<title>AquaLens — Water Intelligence</title>
+<link rel="icon" type="image/svg+xml" href="logo.svg">
+<link rel="stylesheet" href="vendor/leaflet/leaflet.css">
+<link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="water-assessment.css">
+<link rel="stylesheet" href="premium.css">
+</head>
+<body>
+<aside class="sidebar" id="sidebar">
+<a class="brand" href="#assessment" aria-label="AquaLens water assessment"><img src="logo.svg" alt="" width="36" height="36"><span>AquaLens<span class="brand-caption">WATER INTELLIGENCE</span></span></a>
+<div class="workspace-caption">YOUR WATER WORKSPACE</div>
+<nav id="nav" aria-label="Main navigation">
+<div class="nav-group-label">MONITOR & UNDERSTAND</div>
+<button data-page="assessment" class="nav-item"><span data-icon="check"></span><span class="nav-label"><strong>Water condition</strong><small>Readings, uses & precautions</small></span></button>
+<button data-page="overview" class="nav-item"><span data-icon="grid"></span><span class="nav-label"><strong>Lake overview</strong><small>The bigger picture</small></span></button>
+<button data-page="map" class="nav-item"><span data-icon="globe"></span><span class="nav-label"><strong>Explore map</strong><small>Locations & recorded values</small></span></button>
+<button data-page="zones" class="nav-item"><span data-icon="layers"></span><span class="nav-label"><strong>Zone details</strong><small>Understand local differences</small></span></button>
+<button data-page="alerts" class="nav-item"><span data-icon="alert"></span><span class="nav-label"><strong>Change alerts</strong><small>Signals to investigate</small></span><span id="alert-count" class="nav-count">0</span></button>
+<div class="nav-group-label">LOOK AHEAD</div>
+<button data-page="forecasts" class="nav-item"><span data-icon="chart"></span><span class="nav-label"><strong>Future outlook</strong><small>Future indicator readings</small></span><span class="nav-tag">DET</span></button>
+<button data-page="validation" class="nav-item"><span data-icon="check"></span><span class="nav-label"><strong>Check accuracy</strong><small>Compare with actual data</small></span></button>
+<div class="nav-group-label">DATA & EVIDENCE</div>
+<button data-page="evidence" class="nav-item"><span data-icon="book"></span><span class="nav-label"><strong>Source library</strong><small>Read the supporting evidence</small></span></button>
+<button data-page="data" class="nav-item"><span data-icon="database"></span><span class="nav-label"><strong>Your data</strong><small>Uploads, quality & downloads</small></span></button>
+</nav>
+<div class="sidebar-bottom"><div class="workspace-card"><div class="orbital-icon" data-icon="globe"></div><strong>Your lake. In perspective.</strong><p>From satellite observations to decisions backed by evidence.</p><span class="sidebar-chip"><i></i> Research workspace</span></div>
+<div id="connection-status" class="connection-status"><i></i> Connecting to workspace</div>
+<div class="user-row"><div class="avatar">VK</div><div><strong>Vishwas's workspace</strong><small>Environmental research</small></div><span data-icon="chevron"></span></div></div>
+</aside>
+<button class="nav-overlay" id="nav-overlay" aria-label="Close navigation" tabindex="-1"></button>
+<div class="app-shell">
+<header class="topbar"><div class="topbar-left"><button class="icon-button mobile-menu" id="menu-btn" aria-label="Toggle navigation" aria-expanded="false" aria-controls="sidebar"><span data-icon="menu"></span></button><span class="breadcrumb">Workspace</span><span class="breadcrumb-slash">/</span><span id="page-title">Overview</span><span id="page-subtitle" class="visually-hidden">Satellite water quality</span></div><div class="topbar-right"><span class="topbar-label"><span data-icon="globe"></span>Water monitoring workspace</span><span class="topbar-divider"></span><button class="icon-button" id="refresh-btn" title="Refresh workspace" aria-label="Refresh workspace"><span data-icon="refresh"></span></button><button class="avatar small-avatar" id="about-btn" title="About this research workspace">VK</button></div></header><nav class="mobile-nav" aria-label="Dashboard sections"><label class="mobile-nav-label" for="page-select">GO TO</label><select id="page-select" aria-label="Dashboard page"><option value="assessment">Water condition</option><option value="overview">Lake overview</option><option value="map">Explore map</option><option value="zones">Zone details</option><option value="alerts">Change alerts</option><option value="forecasts">Future outlook</option><option value="validation">Check accuracy</option><option value="evidence">Source library</option><option value="data">Your data</option></select></nav>
+<main>
+<div class="context-bar"><div class="context-dataset"><div class="lake-thumb"><svg viewBox="0 0 40 40"><path d="M22 3 30 10 26 17 35 24 27 32 13 37 6 26 12 18 8 10Z" fill="#5ba79e"/><path d="m16 11 4 5-2 9 7 4" fill="none" stroke="#cbe1d5" stroke-width="2"/></svg></div><div><div class="dataset-line"><strong id="dataset-name">MODIS water observatory</strong><span class="mode-label" id="mode-label">PROVIDED DATASET</span></div><span class="context-meta"><span class="context-subtitle" id="period-label">Loading observation history…</span><span class="context-history">Recorded observations</span></span></div></div><div class="global-controls"><label class="compact-select indicator-control"><span class="context-label">Indicator</span><span data-icon="layers"></span><select id="parameter-select" aria-label="Water parameter"><option value="turbidity_proxy">Turbidity proxy</option><option value="ndwi">NDWI</option><option value="chlorophyll_proxy">Chlorophyll proxy</option></select></label><label class="compact-select horizon-control"><span class="context-label">Look ahead</span><span data-icon="clock"></span><select id="horizon-select" aria-label="Forecast horizon"><option value="30" selected>30 days ahead</option><option value="60">60 days ahead</option><option value="90">90 days ahead</option><option value="180">180 days ahead</option><option value="365">365 days ahead</option><option value="730">730 days ahead</option></select></label><button class="btn btn-primary" id="upload-btn"><span data-icon="upload"></span>Upload CSV</button><button class="btn btn-secondary" id="export-btn"><span data-icon="download"></span><span class="export-label">Download data</span></button></div></div>
+<section id="view" aria-live="polite"><div class="loading"><div class="loader"></div><h2>Preparing your observatory</h2><p>Loading observations, forecasts and evidence.</p></div></section>
+<footer class="footer"><span><img src="logo.svg" width="15" height="15" alt=""> AquaLens <span class="footer-dot">·</span> Satellite observations. Local understanding.</span><span>Research prototype <span class="footer-dot">·</span> Estimates require field validation</span></footer>
+</main>
+</div>
+<input type="file" id="csv-input" accept=".csv,text/csv" hidden>
+<div id="toast" class="toast" role="status" hidden></div>
+<script src="icons.js"></script>
+<script src="vendor/leaflet/leaflet.js"></script>
+<script src="water-map.js"></script>
+<script src="water-assessment.js"></script>
+<script src="forecast-studio.js"></script>
+<script type="module" src="app.js"></script>
+</body></html>

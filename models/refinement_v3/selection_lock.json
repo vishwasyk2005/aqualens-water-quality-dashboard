@@ -1,0 +1,12 @@
+{
+  "locked_at_utc": "2026-10-26T08:58:09.792308+00:00",
+  "candidate": 5,
+  "best_epoch": 54,
+  "checkpoint_sha256": "7ebaae4a227edb21dd4cd4259cf7bd48df7a918d1c62bf61012f3912363b6aae",
+  "selection_criterion": "Mean of nine validation RMSE values (3 parameters x 3 native horizons), each divided by its training-only pooled within-zone temporal standard deviation; every task has equal weight.",
+  "train_end": "2021-06-30",
+  "validation_end": "2021-12-31",
+  "source_fingerprint": "5171c73277d0f479c2ddabc3d84d44dc888563d8362f6df78bb195e95bfc8004",
+  "held_out_after_validation_scored": false,
+  "root_decision": "Root approved this single validation-selected candidate before any 2022 scoring. No further configuration tuning is authorized for this run."
+}

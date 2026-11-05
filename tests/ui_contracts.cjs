@@ -1,0 +1,20 @@
+/* Presentation contracts: actual values and scientific warnings must survive redesign. */
+const fs=require('node:fs'),path=require('node:path'),vm=require('node:vm'),assert=require('node:assert/strict');
+const web=path.join(__dirname,'..','web'),window={};
+vm.runInNewContext(fs.readFileSync(path.join(web,'forecast-studio.js'),'utf8'),{window});
+const context={modelAvailable:true,parameterLabel:'Turbidity proxy',zoneLabel:'Whole lake',horizon:30,latestDate:'2023-02-10',selectedDate:'2023-03-12',minDate:'2023-02-11',forecastEnd:'2023-03-12',zoneOptionsMarkup:'<option value="all">Whole lake</option>',qualityMarkup:'<p>NEGATIVE_SCORE_NOTICE</p>',benchmarkMarkup:'<table><td>-0.085</td></table>'};
+const html=window.AquaForecastUI.render(context);
+for(const id of ['zone-select','forecast-chart','interval-status','download-forecast','prediction-date','prediction-cards','train-model','training-live','explanation-content','download-explanation'])assert.equal((html.match(new RegExp('id="'+id+'"','g'))||[]).length,1,id);
+assert.ok(html.includes('NEGATIVE_SCORE_NOTICE'));assert.ok(html.includes('-0.085'));
+assert.ok(window.AquaForecastUI.render({...context,horizon:90}).includes('experimental projection'));
+const short=window.AquaForecastUI.render({...context,horizon:8});assert.ok(short.includes('data-forecast-offset="8"'));assert.ok(!short.includes('data-forecast-offset="16"'));
+const hostile=window.AquaForecastUI.render({...context,zoneLabel:'<img src=x onerror=alert(1)>'});assert.ok(hostile.includes('&lt;img'));assert.ok(!hostile.includes('<img src=x'));
+vm.runInNewContext(fs.readFileSync(path.join(web,'water-assessment.js'),'utf8'),{window,URL});
+const snapshot=JSON.parse(fs.readFileSync(path.join(web,'demo-state.json'),'utf8')),reports=snapshot.water_assessments;
+const assessment=window.AquaAssessment.render(reports[0],reports);
+assert.equal((assessment.match(/role="tab"/g)||[]).length,5);assert.ok(assessment.includes('Preliminary assessment'));assert.ok(assessment.includes('What this screening cannot confirm'));
+assert.ok(window.AquaAssessment.render({...reports[0],zone_name:'<img src=x onerror=alert(1)>'},reports).includes('&lt;img'));
+assert.ok(!window.AquaAssessment.render({...reports[0],sources:[{source_id:'bad',title:'Bad',url:'javascript:alert(1)',text:'test'}]},reports).includes('href="javascript:'));
+const shell=fs.readFileSync(path.join(web,'index.html'),'utf8');for(const p of ['assessment','overview','map','zones','alerts','forecasts','validation','evidence','data'])assert.ok(shell.includes('option value="'+p+'"'));
+assert.ok(shell.indexOf('forecast-studio.js')<shell.indexOf('src="app.js"'));assert.ok(shell.indexOf('premium.css')>shell.indexOf('water-assessment.css'));
+console.log('UI contracts passed: forecast hooks, retained warnings and values, quick-date bounds, escaped labels, five assessment uses, safe sources, all nine navigation routes and asset order.');

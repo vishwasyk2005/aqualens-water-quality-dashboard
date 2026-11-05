@@ -1,0 +1,7 @@
+candidate,mode,window,hidden,dropout,lr,weight_decay,loss,best_epoch,epochs_run,validation_score,train_origins,validation_origins
+1,anchored,8,16,0.0,0.001,0.01,mse,60,85,1.851574833706758,61,23
+2,anchored,12,24,0.1,0.001,0.01,mse,55,80,1.8066196709260112,57,23
+3,anchored,8,24,0.1,0.003,0.001,smooth_l1,28,53,1.782704489606856,61,23
+4,direct,8,16,0.1,0.001,0.01,mse,44,69,1.760816590830858,61,23
+5,direct,12,24,0.1,0.001,0.01,mse,40,65,1.7404367288366889,57,23
+6,direct,12,32,0.0,0.001,0.001,smooth_l1,40,65,1.7355865225394338,57,23

@@ -1,0 +1,208 @@
+[
+  {
+    "source_id": "usgs-turbidity",
+    "title": "USGS: Turbidity and Water",
+    "url": "https://www.usgs.gov/water-science-school/science/turbidity-and-water",
+    "date": null,
+    "verified_on": "2026-10-23",
+    "parameters": [
+      "turbidity_proxy"
+    ],
+    "seasons": [
+      "all"
+    ],
+    "text": "Paraphrase: Turbidity describes optical clarity. Suspended sediment, algae and other material can increase it. Rainfall runoff can wash particles into water; high flows can also resuspend sediment. A turbidity increase alone does not identify its cause.",
+    "applicability": "General mechanisms; USGS describes turbidity measurements. This prototype uses an uncalibrated satellite proxy, not NTU. No local causal or safety determination.",
+    "sensors": [
+      "all"
+    ],
+    "assessment_topics": [
+      "monitoring",
+      "precautions"
+    ]
+  },
+  {
+    "source_id": "usgs-sediment",
+    "title": "USGS: Sediment and Suspended Sediment",
+    "url": "https://www.usgs.gov/water-science-school/science/sediment-and-suspended-sediment",
+    "date": null,
+    "verified_on": "2026-10-23",
+    "parameters": [
+      "turbidity_proxy"
+    ],
+    "seasons": [
+      "all"
+    ],
+    "text": "Paraphrase: Storms transport eroded soil and debris. Moving water carries suspended sediment, which may settle in slower water or be resuspended by faster flow. Rainfall context supports investigating sediment runoff; it does not prove that a lake event was caused by runoff.",
+    "applicability": "General hydrologic mechanism. Local catchment, flow and field measurements are required to test it.",
+    "sensors": [
+      "all"
+    ],
+    "assessment_topics": [
+      "monitoring"
+    ]
+  },
+  {
+    "source_id": "epa-cyanobacteria",
+    "title": "US EPA: Water Treatment Optimization for Cyanotoxins, Version 1.0",
+    "url": "https://www.epa.gov/sites/default/files/2018-11/documents/water_treatment_optimization_for_cyanotoxins.pdf",
+    "date": null,
+    "verified_on": "2026-10-23",
+    "parameters": [
+      "chlorophyll_proxy",
+      "turbidity_proxy"
+    ],
+    "seasons": [
+      "all"
+    ],
+    "text": "Paraphrase: Nutrients, calm water, temperature and light can favor cyanobacteria growth. Rain can supply nutrients, followed by conditions that support growth. A chlorophyll or algae signal does not establish cyanobacteria species, toxins, or exposure risk; confirmation needs appropriate sampling.",
+    "applicability": "General bloom context, not a calibration for this satellite chlorophyll proxy or a local bloom diagnosis. See source section 2 and Table 2-1.",
+    "sensors": [
+      "all"
+    ],
+    "assessment_topics": [
+      "monitoring",
+      "aquatic_life",
+      "precautions"
+    ]
+  },
+  {
+    "source_id": "gee-sentinel-quality",
+    "title": "Google Earth Engine: Harmonized Sentinel-2 Level-2A Surface Reflectance",
+    "url": "https://developers.google.com/earth-engine/datasets/catalog/COPERNICUS_S2_SR_HARMONIZED",
+    "date": null,
+    "verified_on": "2026-10-23",
+    "parameters": [
+      "ndwi",
+      "turbidity_proxy",
+      "chlorophyll_proxy"
+    ],
+    "seasons": [
+      "all"
+    ],
+    "text": "Paraphrase: Sentinel-2 surface reflectance includes scene classification for water, cloud shadows, clouds, cirrus and snow. Cloud and shadow detection products assist quality masking. Inadequate clear pixels require inspection before interpreting changes in water indices or reflectance proxies.",
+    "applicability": "Measurement quality context for Sentinel-2. Low coverage is a reason to withhold classification; it does not prove an artefact.",
+    "sensors": [
+      "Sentinel-2"
+    ],
+    "assessment_topics": [
+      "monitoring"
+    ]
+  },
+  {
+    "source_id": "gee-modis-quality",
+    "title": "NASA MODIS surface reflectance quality flags in Earth Engine",
+    "url": "https://developers.google.com/earth-engine/datasets/catalog/MODIS_061_MOD09GA",
+    "date": null,
+    "verified_on": "2026-10-24",
+    "parameters": [
+      "ndwi",
+      "turbidity_proxy",
+      "chlorophyll_proxy"
+    ],
+    "seasons": [
+      "all"
+    ],
+    "sensors": [
+      "MODIS"
+    ],
+    "text": "Paraphrase: The MOD09GA product documents surface-reflectance quality information, including cloud state, cloud shadow, land and water flags, aerosol conditions and band quality. These fields support checking observation reliability before interpreting spectral changes. The supplied CSV lacks those QA fields and does not identify its source product.",
+    "applicability": "MODIS quality-control context only. This reference does not establish that the uploaded CSV was extracted from MOD09GA, that its pixels were cloud-masked, or that its turbidity and chlorophyll values have calibrated physical units.",
+    "assessment_topics": [
+      "monitoring"
+    ]
+  },
+  {
+    "source_id": "who-drinking-assessment",
+    "title": "WHO: Guidelines for drinking-water quality (2022)",
+    "url": "https://www.who.int/publications/i/item/9789240045064",
+    "date": "2022-03-21",
+    "assessment_topics": [
+      "drinking",
+      "precautions"
+    ],
+    "text": "Paraphrase: Drinking-water safety requires identifying microbial, chemical and other relevant hazards, water safety planning from catchment to consumer, and independent surveillance. Microbial verification uses faecal indicators such as E. coli. Chemical quality is assessed using water analysis against appropriate guideline values. Appearance or optical indicators alone do not establish drinking-water safety.",
+    "applicability": "General WHO drinking-water assessment framework, including microbial and chemical aspects. It is not a local test result, a complete laboratory panel, or an approval to drink this lake water. Applicable national requirements and the water supplier or health authority govern a local decision.",
+    "verified_on": "2026-10-27",
+    "parameters": [
+      "all"
+    ],
+    "seasons": [
+      "all"
+    ],
+    "sensors": [
+      "all"
+    ]
+  },
+  {
+    "source_id": "cpcb-designated-uses",
+    "title": "CPCB: Water quality criteria for designated uses",
+    "url": "https://cpcb.gov.in/water-quality-criteria/",
+    "date": "2019-10-11",
+    "assessment_topics": [
+      "drinking",
+      "recreation",
+      "irrigation",
+      "aquatic_life",
+      "precautions"
+    ],
+    "text": "Paraphrase: CPCB distinguishes drinking-water sources, organised outdoor bathing, wildlife and fisheries, and irrigation uses. Bathing criteria include coliform bacteria, pH, dissolved oxygen and biochemical oxygen demand. Wildlife and fisheries criteria include pH, dissolved oxygen and free ammonia. Irrigation criteria include pH, electrical conductivity, sodium adsorption ratio and boron. Drinking-source categories include treatment or disinfection requirements; they are not approval to drink untreated surface water.",
+    "applicability": "Indian designated-best-use reference. NDWI and uncalibrated turbidity/chlorophyll proxies do not supply these criteria. No A-E class is assigned here; the relevant laboratory measurements and local authority assessment are absent.",
+    "verified_on": "2026-10-27",
+    "parameters": [
+      "all"
+    ],
+    "seasons": [
+      "all"
+    ],
+    "sensors": [
+      "all"
+    ]
+  },
+  {
+    "source_id": "fao-irrigation-quality",
+    "title": "FAO: Water quality for agriculture — water quality evaluation",
+    "url": "https://www.fao.org/4/t0234e/T0234E01.htm",
+    "date": null,
+    "assessment_topics": [
+      "irrigation",
+      "precautions"
+    ],
+    "text": "Paraphrase: Irrigation assessment considers salinity, soil infiltration, specific ion toxicity and other effects. Electrical conductivity and sodium adsorption ratio are considered together for infiltration; sodium, chloride and boron can affect sensitive crops. Interpretation also depends on soil, crop, drainage, climate and irrigation management. pH is part of the guideline context. Optical lake indices cannot substitute for these measurements.",
+    "applicability": "FAO Irrigation and Drainage Paper 29 Rev. 1, chapter 1 and Table 1. Agronomic screening, largely developed in arid and semi-arid conditions; it is not a local irrigation clearance or an assessment of microbial risks for food crops.",
+    "verified_on": "2026-10-27",
+    "parameters": [
+      "all"
+    ],
+    "seasons": [
+      "all"
+    ],
+    "sensors": [
+      "all"
+    ]
+  },
+  {
+    "source_id": "cdc-bloom-precautions",
+    "title": "CDC: Preventing illnesses caused by harmful algal blooms",
+    "url": "https://www.cdc.gov/harmful-algal-blooms/prevention/index.html",
+    "date": "2024-03-22",
+    "assessment_topics": [
+      "drinking",
+      "recreation",
+      "aquatic_life",
+      "precautions"
+    ],
+    "text": "Paraphrase: Check and follow local swimming, fishing and drinking-water advisories. If water has suspicious discoloration, bad smell, foam, scum or algal mats, avoid contact and keep children, pets and livestock away. Rinse with clean tap water after suspected contact. Boiling water containing algal toxins does not remove them and can concentrate them. Contact the water utility or local health/environment authority about concerns. Do not fill pools directly from lakes, rivers or ponds.",
+    "applicability": "Conditional general exposure precautions; this dashboard has not detected a harmful bloom, toxins or an active official advisory. CDC guidance is used as general health context, not as an Indian regulatory standard or proof of a local hazard.",
+    "verified_on": "2026-10-27",
+    "parameters": [
+      "all"
+    ],
+    "seasons": [
+      "all"
+    ],
+    "sensors": [
+      "all"
+    ]
+  }
+]

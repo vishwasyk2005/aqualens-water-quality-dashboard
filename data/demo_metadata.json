@@ -1,0 +1,22 @@
+{
+  "title": "AquaLens synthetic Kerala lake scenario",
+  "synthetic": true,
+  "seed": 42,
+  "periods": 156,
+  "frequency": "weekly Sunday",
+  "cells": 24,
+  "zones": 6,
+  "start": "2023-01-08",
+  "end": "2025-12-28",
+  "description": "Generated sensor-style indices and weather near Kerala. Not measurements of a real lake. A northern-inlet runoff-like anomaly is injected in the final six weeks.",
+  "units": {
+    "ndwi": "dimensionless synthetic index",
+    "turbidity_proxy": "dimensionless synthetic index",
+    "chlorophyll_proxy": "dimensionless synthetic index"
+  },
+  "notes": [
+    "Synthetic coordinates are for interface demonstration only.",
+    "No operational safety or compliance thresholds implied.",
+    "Synthetic accuracy scores are not evidence of real-world performance."
+  ]
+}

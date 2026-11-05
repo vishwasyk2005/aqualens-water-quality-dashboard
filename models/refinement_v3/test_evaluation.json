@@ -1,0 +1,203 @@
+{
+  "phase": "After immutable past-only selection lock",
+  "selection_checkpoint_sha256": "7ebaae4a227edb21dd4cd4259cf7bd48df7a918d1c62bf61012f3912363b6aae",
+  "selected_candidate": 5,
+  "best_epoch": 54,
+  "source_fingerprint": "9157b8c74454d4a0180e0abacdc366cabc1bf9ab7d9cd61df751af12ef930d9b",
+  "test_period_previously_reviewed": true,
+  "used_for_model_selection": false,
+  "paired_rows": 3129,
+  "historical_metrics": [
+    {
+      "model": "det",
+      "parameter": "chlorophyll_proxy",
+      "horizon_days": 8,
+      "mae": 1.9623716747580504,
+      "rmse": 3.515993239439371,
+      "r2": 0.18719759288785842,
+      "n": 306,
+      "target_dates": 51
+    },
+    {
+      "model": "det",
+      "parameter": "ndwi",
+      "horizon_days": 8,
+      "mae": 0.09310241071575555,
+      "rmse": 0.12019475367134892,
+      "r2": 0.5265595103989424,
+      "n": 306,
+      "target_dates": 51
+    },
+    {
+      "model": "det",
+      "parameter": "turbidity_proxy",
+      "horizon_days": 8,
+      "mae": 0.35582229545819943,
+      "rmse": 0.8197700363282456,
+      "r2": 0.02318169098033418,
+      "n": 306,
+      "target_dates": 51
+    },
+    {
+      "model": "det",
+      "parameter": "chlorophyll_proxy",
+      "horizon_days": 16,
+      "mae": 2.0030695332906596,
+      "rmse": 3.5679024922567555,
+      "r2": 0.17637300535574307,
+      "n": 300,
+      "target_dates": 50
+    },
+    {
+      "model": "det",
+      "parameter": "ndwi",
+      "horizon_days": 16,
+      "mae": 0.09062328323044544,
+      "rmse": 0.11791089959172686,
+      "r2": 0.5266399006469071,
+      "n": 300,
+      "target_dates": 50
+    },
+    {
+      "model": "det",
+      "parameter": "turbidity_proxy",
+      "horizon_days": 16,
+      "mae": 0.3428639612417079,
+      "rmse": 0.7994131835917929,
+      "r2": 0.019505447026893274,
+      "n": 300,
+      "target_dates": 50
+    },
+    {
+      "model": "det",
+      "parameter": "chlorophyll_proxy",
+      "horizon_days": 32,
+      "mae": 1.9222193836936339,
+      "rmse": 3.526291782698851,
+      "r2": 0.16733632234666063,
+      "n": 288,
+      "target_dates": 48
+    },
+    {
+      "model": "det",
+      "parameter": "ndwi",
+      "horizon_days": 32,
+      "mae": 0.08319399105230312,
+      "rmse": 0.1126384234390445,
+      "r2": 0.5466091052845568,
+      "n": 288,
+      "target_dates": 48
+    },
+    {
+      "model": "det",
+      "parameter": "turbidity_proxy",
+      "horizon_days": 32,
+      "mae": 0.3298238033682883,
+      "rmse": 0.7523982744958321,
+      "r2": 0.011722044903909157,
+      "n": 288,
+      "target_dates": 48
+    }
+  ],
+  "historical_lake_metrics": [
+    {
+      "model": "det",
+      "parameter": "chlorophyll_proxy",
+      "horizon_days": 8,
+      "mae": 1.3435705513136618,
+      "rmse": 1.9868838069082042,
+      "r2": 0.33557378626317913,
+      "n": 51,
+      "target_dates": 51,
+      "zone_id": "all"
+    },
+    {
+      "model": "det",
+      "parameter": "ndwi",
+      "horizon_days": 8,
+      "mae": 0.06265511545653775,
+      "rmse": 0.07450798947614269,
+      "r2": -0.08477322930148046,
+      "n": 51,
+      "target_dates": 51,
+      "zone_id": "all"
+    },
+    {
+      "model": "det",
+      "parameter": "turbidity_proxy",
+      "horizon_days": 8,
+      "mae": 0.2184609723479094,
+      "rmse": 0.3435498853546861,
+      "r2": 0.11169603557139396,
+      "n": 51,
+      "target_dates": 51,
+      "zone_id": "all"
+    },
+    {
+      "model": "det",
+      "parameter": "chlorophyll_proxy",
+      "horizon_days": 16,
+      "mae": 1.373139606922527,
+      "rmse": 2.032079477198221,
+      "r2": 0.3103925958430086,
+      "n": 50,
+      "target_dates": 50,
+      "zone_id": "all"
+    },
+    {
+      "model": "det",
+      "parameter": "ndwi",
+      "horizon_days": 16,
+      "mae": 0.0596718472331625,
+      "rmse": 0.07373626335864121,
+      "r2": -0.08373512595551569,
+      "n": 50,
+      "target_dates": 50,
+      "zone_id": "all"
+    },
+    {
+      "model": "det",
+      "parameter": "turbidity_proxy",
+      "horizon_days": 16,
+      "mae": 0.21244963028955977,
+      "rmse": 0.3407970674191165,
+      "r2": 0.11399974488216436,
+      "n": 50,
+      "target_dates": 50,
+      "zone_id": "all"
+    },
+    {
+      "model": "det",
+      "parameter": "chlorophyll_proxy",
+      "horizon_days": 32,
+      "mae": 1.3033077632753132,
+      "rmse": 1.9690613742467111,
+      "r2": 0.27757218735341527,
+      "n": 48,
+      "target_dates": 48,
+      "zone_id": "all"
+    },
+    {
+      "model": "det",
+      "parameter": "ndwi",
+      "horizon_days": 32,
+      "mae": 0.04935915665745507,
+      "rmse": 0.06441806295285982,
+      "r2": 0.09336310368967304,
+      "n": 48,
+      "target_dates": 48,
+      "zone_id": "all"
+    },
+    {
+      "model": "det",
+      "parameter": "turbidity_proxy",
+      "horizon_days": 32,
+      "mae": 0.19680707714345025,
+      "rmse": 0.32869993010314763,
+      "r2": 0.0853777844360385,
+      "n": 48,
+      "target_dates": 48,
+      "zone_id": "all"
+    }
+  ]
+}

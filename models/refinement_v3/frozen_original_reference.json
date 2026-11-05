@@ -1,0 +1,107 @@
+{
+  "reference": {
+    "score": 1.752870293375177,
+    "metrics": [
+      {
+        "parameter": "ndwi",
+        "horizon_days": 8,
+        "n": 138,
+        "mae": 0.11453289052930664,
+        "rmse": 0.16306473275880443,
+        "bias": -0.037604966805153045,
+        "normalization_scale": 0.1136546121386088,
+        "normalized_rmse": 1.4347392480644512
+      },
+      {
+        "parameter": "turbidity_proxy",
+        "horizon_days": 8,
+        "n": 138,
+        "mae": 0.6333277572085354,
+        "rmse": 1.3795486773131551,
+        "bias": -0.00878976842570143,
+        "normalization_scale": 0.49184010528849437,
+        "normalized_rmse": 2.804872279587622
+      },
+      {
+        "parameter": "chlorophyll_proxy",
+        "horizon_days": 8,
+        "n": 138,
+        "mae": 1.2786000085065365,
+        "rmse": 2.3167943197292975,
+        "bias": 0.15476020848160318,
+        "normalization_scale": 2.661679397323967,
+        "normalized_rmse": 0.8704257627941914
+      },
+      {
+        "parameter": "ndwi",
+        "horizon_days": 16,
+        "n": 132,
+        "mae": 0.1121551268582413,
+        "rmse": 0.15446243951802052,
+        "bias": -0.03815376093854708,
+        "normalization_scale": 0.1136546121386088,
+        "normalized_rmse": 1.359051222044945
+      },
+      {
+        "parameter": "turbidity_proxy",
+        "horizon_days": 16,
+        "n": 132,
+        "mae": 0.6945974725559138,
+        "rmse": 1.5139986163847425,
+        "bias": -0.040207570039935116,
+        "normalization_scale": 0.49184010528849437,
+        "normalized_rmse": 3.0782333528834327
+      },
+      {
+        "parameter": "chlorophyll_proxy",
+        "horizon_days": 16,
+        "n": 132,
+        "mae": 1.2671368800630944,
+        "rmse": 2.205004889767219,
+        "bias": 0.1659898530393307,
+        "normalization_scale": 2.661679397323967,
+        "normalized_rmse": 0.8284261778424986
+      },
+      {
+        "parameter": "ndwi",
+        "horizon_days": 32,
+        "n": 120,
+        "mae": 0.12209043782163076,
+        "rmse": 0.1708416262868169,
+        "bias": -0.0546892759632208,
+        "normalization_scale": 0.1136546121386088,
+        "normalized_rmse": 1.5031649228494575
+      },
+      {
+        "parameter": "turbidity_proxy",
+        "horizon_days": 32,
+        "n": 120,
+        "mae": 0.6565511144130453,
+        "rmse": 1.4603860984822845,
+        "bias": -0.016314659205506416,
+        "normalization_scale": 0.49184010528849437,
+        "normalized_rmse": 2.969229395446877
+      },
+      {
+        "parameter": "chlorophyll_proxy",
+        "horizon_days": 32,
+        "n": 120,
+        "mae": 1.3924582357664042,
+        "rmse": 2.469214102347679,
+        "bias": -0.08833899782058793,
+        "normalization_scale": 2.661679397323967,
+        "normalized_rmse": 0.9276902788631151
+      }
+    ],
+    "checkpoint_sha256": "cde9747841facf361ba59f4d886e639ac0f967b3577b6ad3739a1584fb001bce",
+    "description": "Existing separate DET checkpoint evaluated only on the same corrected pre-2022 validation-origin mask."
+  },
+  "fit_data_fingerprint": "5171c73277d0f479c2ddabc3d84d44dc888563d8362f6df78bb195e95bfc8004",
+  "train_end": "2021-06-30",
+  "validation_end": "2021-12-31",
+  "fit_available_from": "2021-06-26",
+  "selection_lock_date": "2021-12-27",
+  "old_geometry_run_checkpoint_sha256": "4f93201835b086e1796009ec3289d5d0d32f8bffd0a540acea1ea659b59ae316",
+  "target_definition": "Same parameter-valid source-zone means; geometry snapping changes only model-cell inputs, not these validation labels.",
+  "status": "Frozen pre-2022 validation reference computed before coordinate-jitter repair, with origin availability enforced. Not a selected model."
+}
