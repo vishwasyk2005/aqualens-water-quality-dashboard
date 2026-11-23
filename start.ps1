@@ -2,6 +2,7 @@ $ErrorActionPreference = 'Stop'
 Set-Location -LiteralPath $PSScriptRoot
 $bundledPython = Join-Path $env:USERPROFILE '.cache/codex-runtimes/codex-primary-runtime/dependencies/python/python.exe'
 $preparedRuntime = Join-Path $PSScriptRoot '../../work/runtime/packages'
+$preparedProphet = Join-Path $PSScriptRoot '../../work/prophet_runtime'
 $preparedTorch = Join-Path $env:USERPROFILE 'Documents/Codex/work/aqdeps'
 $venvPython = Join-Path $PSScriptRoot '.venv/Scripts/python.exe'
 $bundledDataReady = $false
@@ -25,11 +26,15 @@ if ($bundledDataReady) {
         if ($LASTEXITCODE -ne 0) { throw 'Install Python 3.12 and retry.' }
     }
     $runPython = $venvPython
-    & $runPython -c 'import pandas,numpy,torch' 2>$null
+    & $runPython -c 'import pandas,numpy,torch,prophet' 2>$null
     if ($LASTEXITCODE -ne 0) {
         & $runPython -m pip install -r requirements-training.txt
         if ($LASTEXITCODE -ne 0) { throw 'Could not install dependencies. Check your connection.' }
     }
+}
+if (Test-Path -LiteralPath (Join-Path $preparedProphet 'prophet')) {
+    $prophetPath = (Resolve-Path -LiteralPath $preparedProphet).Path
+    $env:PYTHONPATH = (@($prophetPath, $env:PYTHONPATH) | Where-Object { $_ }) -join ';'
 }
 $runtimeTemp = Join-Path $PSScriptRoot '.runtime-temp'
 New-Item -ItemType Directory -Force -Path $runtimeTemp | Out-Null

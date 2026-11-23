@@ -1,14 +1,18 @@
-# Present-water assessment
+# Satellite condition monitoring
 
-The primary dashboard page is **Water assessment** (`#assessment`). Uploading a CSV opens this page. The flow is recorded condition, a **three-indicator preliminary interpretation**, possible uses, precautions, inspectable evidence, and then the DET outlook.
+The **Monitor** page (`#assessment`) opens at the recorded satellite condition. It shows the observation date, available coverage, recent changes, zones to inspect, supporting evidence, and projections from that observation. Water-use tabs below the readings show the relevant satellite findings, an inspection step and evidence. Open **How to verify this use** for the field checks.
+
+The supplied MODIS-style series ends on **10 February 2023**. Supplementary [ESA Lakes CCI observations](https://climate.esa.int/en/projects/lakes/data/) add suspended matter and lake surface temperature where usable, through December 2023. Each indicator shows its own acquisition date. A newer compatible satellite CSV can update the monitor.
+
+The forecast condition cards compare the 8-, 16-, and 32-day values with their observed 12-week reference range. A condition label requires enough recorded history and matching historical accuracy above the project’s R² goal of 0.20. Forecasts from the archive retain their original issue and target dates. Lake median forecasts are evaluated and displayed on their own observation series.
 
 ## What is implemented
 
 - Whole-lake and zone assessments for the latest observation date. The supplied CSV ends on **10 February 2023**; these results are not a measurement of water today.
-- Three observed indicators with previous observed readings, absolute changes, and exploratory monitoring labels. The displayed whole-lake values are observed means; whole-lake labels reflect the most flagged zone, not a separate test of that mean. Zone details remain in the audit output.
-- Five use categories: drinking/cooking, bathing/recreation, irrigation, aquatic life/fisheries, and satellite monitoring/research. Each card gives a verdict, explanation, next action, missing tests and citations.
+- Observed indicators with previous usable readings, absolute changes, and monitoring labels. Whole-lake means and flagged zones have their own evidence.
+- Four water-use tabs cover drinking and cooking, bathing and recreation, irrigation, and aquatic life and fisheries. The assessment API also includes satellite monitoring and research.
 - Conditional, cited precautions for drinking decisions, visible bloom signs or an official advisory, irrigation checks and field verification. A satellite chlorophyll proxy does not trigger a harmful-bloom diagnosis.
-- Numbered evidence buttons open the stored reference passage, its application limits, original HTTPS source and checked date. The assessment can be downloaded as a dated Markdown report with its citations.
+- Numbered evidence buttons open the stored reference passage, its application limits, original HTTPS source and checked date. The recorded condition can be exported with its citations.
 - Zone changes, use tabs and keyboard navigation, source inspection, and links to the geographic map and separate DET forecast.
 
 ## Preliminary screening from the three indicators
@@ -23,11 +27,13 @@ The screen may suggest checking suspended material or clarity when the turbidity
 
 ## What the supplied data can establish
 
-NDWI, uncalibrated turbidity proxy and uncalibrated chlorophyll proxy support exploratory monitoring. They do not establish pathogen levels, chemical contamination, dissolved oxygen, salinity, sodium hazards or toxin presence. No physical use is cleared from these proxies. The prototype returns **Suitability not established** and identifies the required measurements, rather than labelling unknown water safe or unsafe.
+Each use shows **Use checks pending** alongside the satellite findings. NDWI and the turbidity and chlorophyll proxies help prioritize source inspections, bloom checks, irrigation-intake inspections and habitat visits. Field measurements establish the facts needed to assess the intended use.
 
 The test lists are screening requirements, not a complete certification panel. Drinking decisions require a suitable laboratory and local water-safety assessment. CPCB surface-water source classes are not an approval to drink untreated water. Irrigation interpretation also needs crop, soil and management context. Habitat suitability and fish-consumption safety are separate questions.
 
-Extra CSV columns are not silently treated as validated laboratory measurements. A future implementation can add a separate, validated laboratory-data workflow with explicit units, sampling dates, methods and applicable criteria.
+For Vembanad, start with dated station results near the satellite locations. Match the station location and sample date to nearby satellite observations and keep the sampling method, units and source with each field result. Use missing measurements to plan targeted sampling. The assessment currently reads the satellite CSV, so verified field results need a separate import workflow. [Kerala water-quality portal](https://kspcbipam.kerala.gov.in/Dashboard/waterQuality) · [KSPCB monitoring reports](https://kspcb.kerala.gov.in/water-and-air-quality-directory)
+
+CPCB's 2022 report lists Vembanad stations including Pathiramanal (station 2312) and publishes ranges for pH, dissolved oxygen, conductivity, BOD and bacteria. Use these ranges as historical context and request individual sample dates and locations for matching with satellite scenes. [CPCB 2022 lake monitoring report](https://cpcb.nic.in/wqm/2022/Water_pond_tanks_2022.pdf)
 
 ## Evidence and RAG method
 
@@ -35,10 +41,10 @@ The assessment retrieves relevant stored passages using topic and sensor metadat
 
 Policy citations are accepted only when the supplied source ID, URL, passage and metadata match the installed verified reference collection. Custom reference collections remain searchable in the existing Evidence page, but altered or unrelated passages cannot authorize safety advice. An empty or unmatched policy collection explicitly withholds recommendations, without silently substituting a different library. Source passages are data, never executable instructions.
 
-Official guidance checked **27 October 2026**:
+Official guidance and reference passages:
 
 - [WHO: Guidelines for drinking-water quality (2022)](https://www.who.int/publications/i/item/9789240045064): drinking-water risk assessment, microbial and chemical aspects, treatment and surveillance.
-- [CPCB: Water quality criteria](https://cpcb.gov.in/water-quality-criteria/): designated-use requirements, including coliforms, pH, oxygen/BOD, ammonia and irrigation indicators. No numerical proxy-to-standard conversion is performed.
+- Annexure I lists designated-use requirements, including bacteria, pH, oxygen, BOD, ammonia and irrigation measurements. [CPCB: Water quality criteria](https://cpcb.nic.in/wqm/Ind-Guidelines-RestWaterBodies.pdf)
 - [FAO: Water quality for agriculture, chapter 1/Table 1](https://www.fao.org/4/t0234e/T0234E01.htm): salinity, EC/SAR, specific-ion hazards, and local crop/soil context.
 - [CDC: Preventing illnesses caused by harmful algal blooms](https://www.cdc.gov/harmful-algal-blooms/prevention/index.html): conditional exposure precautions and official advisories. These do not establish that a bloom exists locally.
 

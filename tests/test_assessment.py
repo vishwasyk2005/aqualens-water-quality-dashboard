@@ -81,6 +81,7 @@ class WaterAssessmentTests(unittest.TestCase):
         self.assertIn('no observations', result['status']['summary'])
         self.assertTrue(all(row['value'] is None for row in result['observations']))
         self.assertEqual(result['uses'][-1]['status'], 'not_established')
+        self.assertTrue(all(use['preliminary']['label'] == 'More satellite readings needed' for use in result['uses'][:-1]))
 
     def test_future_measurements_do_not_change_cutoff_assessment(self):
         df = measurements()
@@ -149,6 +150,26 @@ class WaterAssessmentTests(unittest.TestCase):
         self.assertIn('neither is established by this CSV', bloom['why'])
         self.assertIn('Do not rely on boiling', bloom['action'])
         self.assertEqual(result['status']['code'], 'unusual')
+
+    def test_use_screening_prioritizes_the_relevant_satellite_changes(self):
+        df = measurements()
+        df.loc[df.date.eq(df.date.max()), 'chlorophyll_proxy'] = 100.
+        result = assess_water(df)
+        uses = {use['id']: use for use in result['uses']}
+        recreation = uses['recreation']['preliminary']
+        fisheries = uses['aquatic_life']['preliminary']
+        irrigation = uses['irrigation']['preliminary']
+        self.assertEqual(recreation['label'], 'Satellite change to review')
+        self.assertIn('Chlorophyll proxy 100', recreation['findings'][0])
+        self.assertIn('Unusual in Zone z1, Zone z2', recreation['findings'][0])
+        self.assertIn('swimming area', recreation['action'])
+        self.assertIn('dissolved oxygen', fisheries['action'])
+        self.assertEqual(irrigation['label'], 'No unusual satellite change flagged')
+        self.assertTrue(any('NDWI' in finding for finding in irrigation['findings']))
+        self.assertFalse(any('Chlorophyll' in finding for finding in irrigation['findings']))
+        for use in (uses['recreation'], uses['irrigation'], uses['aquatic_life']):
+            self.assertEqual(use['label'], 'Use checks pending')
+            self.assertFalse(use['preliminary']['safety_clearance'])
 
     def test_unvalidated_extra_columns_do_not_clear_a_use(self):
         df = measurements()

@@ -3,9 +3,13 @@ import importlib.util
 import tempfile
 import unittest
 from pathlib import Path
+from types import SimpleNamespace
+from unittest.mock import patch
 import numpy as np
 import pandas as pd
 from aqualens.forecast import PARAMETERS, _panel, _scaler, _examples, split_dates, dataset_fingerprint, train_models, forecast_zones
+from aqualens.model_selection import _seasonal_similarity
+from aqualens.prophet_model import prophet_daily, prophet_native
 
 def fixture(periods=64):
     rows=[]
@@ -18,6 +22,46 @@ def fixture(periods=64):
     return pd.DataFrame(rows)
 
 class ForecastTests(unittest.TestCase):
+    def test_prophet_uses_recorded_training_values_and_calendar_leads(self):
+        dates = pd.to_datetime(['2020-01-01', '2020-01-05', '2020-02-01', '2020-02-10'])
+        panel = {'dates': dates, 'targets': np.array([0.1, np.nan, 0.4, 99.]).reshape(-1, 1, 1)}
+        histories = []
+        settings = []
+
+        class FakeProphet:
+            def __init__(self, **options):
+                settings.append(options)
+
+            def fit(self, history):
+                histories.append(history)
+
+            def predict(self, future):
+                return future.assign(yhat=(future.ds - dates[0]).dt.days)
+
+        with patch.dict('sys.modules', {'prophet': SimpleNamespace(Prophet=FakeProphet)}):
+            historical = prophet_native(panel, dates[2], (8, 16, 32))
+            daily = prophet_daily(panel, dates[2], 3)
+
+        for options, history in zip(settings, histories, strict=True):
+            self.assertEqual(options['seasonality_mode'], 'multiplicative')
+            self.assertTrue(options['yearly_seasonality'])
+            self.assertEqual(options['changepoint_prior_scale'], 0.1)
+            self.assertEqual(options['seasonality_prior_scale'], 5.0)
+            self.assertEqual(history.ds.tolist(), [dates[0], dates[2]])
+            self.assertEqual(history.y.tolist(), [0.1, 0.4])
+        np.testing.assert_array_equal(historical[-1, :, 0, 0], [48, 56, 72])
+        np.testing.assert_array_equal(daily[:, 0, 0], [41, 42, 43])
+
+    def test_seasonal_similarity_uses_only_available_history(self):
+        days = np.arange(0, 400, 8)
+        targets = (np.sin(days / 40) + 2).reshape(-1, 1, 1)
+        estimates = _seasonal_similarity(days, targets, targets)
+        changed = targets.copy()
+        changed[21:] = 1000
+        new_estimates = _seasonal_similarity(days, changed, changed)
+        np.testing.assert_array_equal(estimates[:21], new_estimates[:21])
+        self.assertFalse(np.array_equal(estimates[-1], new_estimates[-1]))
+
     def test_scaler_and_training_windows_ignore_future(self):
         df=fixture(); cut=split_dates(df); p=_panel(df); m,s=_scaler(p,cut['train_end'])
         altered=df.copy(); altered.loc[altered.date>cut['train_end'],'turbidity_proxy']=100000

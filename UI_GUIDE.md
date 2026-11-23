@@ -1,34 +1,37 @@
-# AquaLens interface update
+# AquaLens interface guide
 
-The redesigned interface keeps the project focused on understanding observed water conditions before exploring the future outlook. Scientific values, water-use limits, evidence sources, DET weights and historical evaluation results are unchanged.
+The new frontend starts with the lake's observation history, then separates water condition, the interactive map, forecasts, and accuracy into their own views. You can move between them with the top navigation. On a small screen, the navigation scrolls sideways.
 
 ## Find your way
 
 | Page | Purpose |
 |---|---|
-| Water condition | Latest recorded condition, three-indicator screening, possible uses, practical checks and source evidence |
-| Lake overview | Readings, change alerts, trends and comparisons across the lake |
-| Explore map | Dated observation points, geographic context and measurement inspection |
-| Zone details | Local readings and comparison with a zone's recent history |
-| Change alerts | Historical deviations to investigate |
-| Future outlook | DET forecasts, selected-date values, visible accuracy results and training controls |
-| Check accuracy | Actual-versus-predicted historical comparisons and error inspection |
-| Source library | Reference passages, search and applicability |
-| Your data | Uploads, quality checks, provenance and downloads |
+| Monitor | Latest recorded condition, three indicators, potential uses, precautions and cited evidence |
+| Map | Actual observation points, date and zone filters, and measurement inspection |
+| Forecast | Date and horizon controls, estimates from the selected method, and downloads |
+| Accuracy | Actual and predicted readings, the R² goal scorecard and exact paired values |
+| Sources | Searchable references, applicability, and optional custom sources |
+| Data | CSV upload and export, quality checks, observation explorer, and DET training |
 
-The desktop sidebar groups monitoring, outlook, and data/evidence pages. On a narrow screen, the labelled page selector reaches every page. The menu drawer also supports Escape and hides its off-screen controls from keyboard navigation while closed. The condition and overview pages include a four-step workflow shortcut.
+The opening image illustrates a fictional freshwater landscape. Use **Explore the map** for the actual locations and **Read the assessment** to review the latest recorded finding. **Review change alerts** opens signals that departed from recent history.
 
 ## Read the outlook
 
-1. Choose an indicator, outlook length and location.
-2. Compare the observed history and model estimates. Accuracy notices remain visible.
-3. Pick a future date, or use the 8-, 16- and 30-day shortcuts where available, to see all three indicator values.
-4. Review the recorded errors and supporting references. Training and technical records are available in expandable sections.
+1. Open **Forecast**, then pick a location, indicator, and forecast length.
+2. Keep **Auto** for the model selected using earlier observations, or choose a named method to compare.
+3. Use the date picker or timeline to inspect all three estimates for the same day. Save the selected location's outlook as CSV.
+4. Open **Accuracy** to switch among the nine indicator and horizon combinations, compare observed and predicted values, and inspect each matched date or export its pairs.
 
-The date shortcuts change only the selected display date; they do not train or modify the DET model. Long-horizon experimental labels, uncertainty limitations and negative R-squared values remain visible. The selected location and indicator appear in the outlook header.
+The date controls change the selected display date. They do not change model weights. Experimental projections, interval limitations and negative R² values remain visible. See [MODEL_COMPARISON.md](MODEL_COMPARISON.md) for the results and data limits.
 
-## Visual changes
+The supplied MODIS dataset can open its saved Auto forecasts through day 32 and its frozen historical benchmark directly. AquaLens checks the dataset fingerprint and selected model before using these results. New uploads use their own data. For maintainers, `python scripts/export_station_reference.py` rebuilds these small bundles after the complete saved workspace is exported.
 
-Larger text, stronger contrast, a cool light background, a navy/teal identity, clearer cards, larger controls and more readable tables apply throughout the dashboard. Observation dates are labelled as records rather than live conditions. Controls appear only on pages where they are relevant. The assessment presents its main finding and practical checks before expandable detail, without removing reference passages or safety limits.
+## Local workspace and saved dataset
+
+Open the project with `start.bat` for uploads, training, and interactive API queries. When the local engine cannot connect, the saved MODIS workspace loads instead. It includes historical observations and saved forecasts for the supplied CSV. Forecasts and assessment summaries are calculated from the recorded period; they are not a live feed.
+
+## Hero image
+
+`web/station/lake-basin.png` was created with the built-in image generation tool. The brief was a wide, top-down aerial view of a fictional tropical freshwater lake, with curving wetland shores, moss and jade tones, and no text, people, or identifiable location. It is labelled as an illustration in the interface.
 
 The local UI remains buildless and uses no external font or application-script service. The existing map tile providers and security policy are unchanged.

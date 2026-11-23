@@ -12,13 +12,11 @@ from server import Handler
 class MapIntegrationTests(unittest.TestCase):
     def test_map_dependencies_are_local_and_loaded_in_order(self):
         page = (ROOT / 'web' / 'index.html').read_text(encoding='utf-8-sig')
-        self.assertLess(page.index('vendor/leaflet/leaflet.css'), page.index('href="styles.css"'))
-        self.assertLess(page.index('src="vendor/leaflet/leaflet.js"'), page.index('src="water-map.js"'))
-        self.assertLess(page.index('src="water-map.js"'), page.index('src="app.js"'))
+        self.assertLess(page.index('vendor/leaflet/leaflet.css'), page.index('href="station/geography.css"'))
+        self.assertLess(page.index('src="vendor/leaflet/leaflet.js"'), page.index('src="station/main.js"'))
         self.assertNotIn('src="https://', page)
-        self.assertEqual(page.count('data-page="map"'), 1)
-        self.assertIn('id="page-select" aria-label="Dashboard page"', page)
-        self.assertIn('<option value="map">', page)
+        self.assertEqual(page.count('data-route="map"'), 1)
+        self.assertIn('href="#map"', page)
 
     def test_tile_policy_does_not_allow_remote_scripts_or_data_connections(self):
         handler = Handler.__new__(Handler)

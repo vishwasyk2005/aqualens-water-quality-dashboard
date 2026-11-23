@@ -25,7 +25,7 @@ TOPIC_IDS = {
     "precautions": {"who-drinking-assessment", "cpcb-designated-uses", "fao-irrigation-quality", "cdc-bloom-precautions"},
     "monitoring": {"usgs-turbidity", "epa-cyanobacteria", "gee-modis-quality", "gee-sentinel-quality"},
 }
-OFFICIAL_DOMAINS = {"who.int", "cpcb.nic.in", "cpcb.gov.in", "fao.org", "cdc.gov", "usgs.gov", "epa.gov", "developers.google.com"}
+OFFICIAL_DOMAINS = {"who.int", "cpcb.nic.in", "cpcb.gov.in", "fao.org", "cdc.gov", "usgs.gov", "epa.gov", "developers.google.com", "climate.esa.int"}
 RANK = {"Stable": 0, "Watch": 1, "Unusual": 2, "Insufficient data": 3}
 
 
@@ -204,35 +204,74 @@ def _preliminary_assessment(observations, selected, current_rows, latest, zone_i
     return dict(title=title, summary=summary, confidence=confidence, signals=signals, scope_note=scope_note)
 
 
-def _use_preliminary(uses, preliminary):
-    signals = preliminary["signals"]
-    by_parameter = {row["parameter"]: row for row in signals}
+USE_SCREENING_ACTIONS = {
+    "drinking": {
+        "turbidity_proxy": "Inspect clarity and suspended material near the intake when planning source-water sampling.",
+        "chlorophyll_proxy": "Check the intake area for visible algae during the source inspection.",
+    },
+    "recreation": {
+        "chlorophyll_proxy": "Prioritize the swimming area for a visual bloom check and look up local advisories.",
+        "turbidity_proxy": "Check clarity at the access point during the site inspection.",
+    },
+    "irrigation": {
+        "turbidity_proxy": "Check for suspended material at the irrigation intake and inspect intake screens.",
+        "ndwi": "Use dated imagery to locate the water near the planned intake for the field visit.",
+    },
+    "aquatic_life": {
+        "chlorophyll_proxy": "Use the algae-related reading to prioritize sites for a habitat visit and dissolved oxygen measurements.",
+        "turbidity_proxy": "Inspect suspended sediment and water clarity during the habitat visit.",
+    },
+}
+
+
+def _use_preliminary(uses, preliminary, observations):
+    by_parameter = {row["parameter"]: row for row in preliminary["signals"]}
+    reading_by_parameter = {row["parameter"]: row for row in observations}
     for use in uses:
-        relevant = signals if use["id"] == "monitoring" else [by_parameter[p] for p in ("turbidity_proxy", "chlorophyll_proxy", "ndwi")]
+        follow_up = USE_SCREENING_ACTIONS.get(use["id"], {})
+        relevant = [by_parameter[p] for p in follow_up] if follow_up else preliminary["signals"]
         available = [row for row in relevant if row["status"] != "unavailable"]
         grounded = [row for row in available if row["evidence_ids"]]
-        summary = " ".join(row["observation"] for row in relevant)
+        priority = {"Unusual": 2, "Watch": 1}
+        statuses = {}
+        findings = []
+        for signal in relevant:
+            parameter = signal["parameter"]
+            reading = reading_by_parameter[parameter]
+            flagged_zones = [zone for zone in reading["zone_details"] if zone["status"] in priority]
+            status = max((zone["status"] for zone in flagged_zones), key=priority.get, default=reading["status"])
+            statuses[parameter] = status
+            value, previous = reading["value"], reading["previous"]
+            if value is None:
+                findings.append(signal["observation"])
+                continue
+            if previous is None:
+                findings.append(f"{reading['label']} {value:.4g} · No earlier usable reading.")
+                continue
+            locations = ", ".join(zone["zone_name"] for zone in flagged_zones if zone["status"] == status)
+            if locations:
+                status = f"{status} in {locations}"
+            prior_date = reading["previous_date"][:10]
+            findings.append(f"{reading['label']} {value:.4g}, previously {previous:.4g} on {prior_date} · {status}.")
+
         if not available:
-            label = "Preliminary comparison unavailable"
-            action = "Relative-change interpretation is withheld until current and preceding usable observed readings are available."
+            label = "More satellite readings needed"
+            action = "Compare a usable observation with the next suitable scene to plan a site visit."
         elif not grounded:
             label = "Recorded signals; interpretation withheld"
             action = "Reference-backed preliminary guidance is withheld because matching verified interpretation evidence is unavailable."
         else:
-            label = "Preliminary three-indicator screening"
-            if use["id"] == "monitoring":
-                action = "Use the dated index changes to prioritize imagery review and field follow-up. " + " ".join(row["action"] for row in grounded[:2])
-            elif use["id"] == "irrigation":
-                action = "Review the optical changes on site as an initial irrigation-source screening step. This does not assess crop, soil or salinity suitability. " + grounded[0]["action"]
-            elif use["id"] == "aquatic_life":
-                action = "Review the available index changes as an initial habitat-screening step; oxygen and ammonia conditions remain unmeasured. " + grounded[0]["action"]
-            elif use["id"] == "recreation":
-                action = "Use the optical changes to prioritize an on-site check before considering contact with the water. " + grounded[0]["action"]
+            if any(status in priority for status in statuses.values()):
+                label = "Satellite change to review"
+            elif len(available) == len(relevant) and all(status == "Stable" for status in statuses.values()):
+                label = "No unusual satellite change flagged"
             else:
-                action = "Use the optical changes to prioritize source inspection before considering drinking or cooking use. " + grounded[0]["action"]
-        refs = list(dict.fromkeys([identifier for row in grounded for identifier in row["evidence_ids"]] + (use["evidence_ids"] if grounded else [])))
-        use["preliminary"] = dict(label=label, summary=summary, action=action, evidence_ids=refs, safety_clearance=False,
-            evidence_note="A screening interpretation of the supplied indicators, not a suitability decision. Reference guidance does not provide missing local measurements.")
+                label = "Limited satellite comparison"
+            grounded.sort(key=lambda row: priority.get(statuses[row["parameter"]], 0), reverse=True)
+            action = " ".join(follow_up.get(row["parameter"], row["action"]) for row in grounded[:2])
+        refs = list(dict.fromkeys(identifier for row in grounded for identifier in row["evidence_ids"]))
+        use["preliminary"] = dict(label=label, summary=" ".join(findings), findings=findings, action=action, evidence_ids=refs,
+            safety_clearance=False, evidence_note="These readings help prioritize site checks and sampling.")
 
 
 def assess_water(df: pd.DataFrame, knowledge=None, zone_id="all", as_of=None) -> dict:
@@ -347,21 +386,21 @@ def assess_water(df: pd.DataFrame, knowledge=None, zone_id="all", as_of=None) ->
     uses = []
     use_rules = [
         ("drinking", "Drinking & cooking", "drinking", "drinking water microbial chemical safety testing laboratory E coli", {"who-drinking-assessment"},
-         "Satellite indices cannot establish microbial or chemical drinking-water safety.", ["Microbial indicators, including E. coli", "Chemical analysis appropriate to the source", "Treatment and local drinking-water assessment"],
+         "Check source-water test results and confirm the treatment needed for drinking and cooking.", ["Microbial indicators, including E. coli", "Chemical analysis appropriate to the source", "Treatment and local drinking-water assessment"],
          "Use a supply confirmed suitable for drinking and cooking while appropriate laboratory and treatment checks are arranged."),
         ("recreation", "Bathing & recreation", "recreation", "bathing recreation microbial coliform pH dissolved oxygen biochemical oxygen demand swimming local advisories", {"cpcb-designated-uses", "cdc-bloom-precautions"},
-         "Bathing suitability needs use-specific measurements and local advisories that this proxy CSV does not contain.", ["Microbial indicators for bathing water", "pH and dissolved oxygen", "Biochemical oxygen demand (BOD)", "Current local recreational-water advisories"],
+         "Check the latest bathing advisory and sampling results for the specific swimming area.", ["Faecal coliforms and faecal streptococci", "pH and dissolved oxygen", "Biochemical oxygen demand (BOD)", "Current local recreational-water advisories"],
          "Check current local bathing advisories and obtain the missing use-specific tests before treating this location as suitable for bathing."),
         ("irrigation", "Irrigation", "irrigation", "irrigation salinity electrical conductivity sodium adsorption ratio boron chloride soil crop", {"fao-irrigation-quality"},
-         "Turbidity and chlorophyll proxies do not measure salinity or sodium-related irrigation hazards.", ["Electrical conductivity / salinity", "Sodium adsorption ratio (SAR)", "Boron and chloride", "pH", "Crop, soil and irrigation-method context"],
+         "Test water at the irrigation intake and review the results for the intended crop and soil.", ["Electrical conductivity / salinity", "Sodium adsorption ratio (SAR)", "Boron and chloride", "pH", "Crop, soil and irrigation-method context"],
          "Obtain irrigation-water tests and assess crop, soil and irrigation-method requirements before selecting this source."),
         ("aquatic_life", "Aquatic life & fisheries", "aquatic_life", "aquatic life fisheries dissolved oxygen pH ammonia", {"cpcb-designated-uses"},
-         "Satellite signals cannot establish habitat suitability, dissolved oxygen or ammonia conditions. Fish-consumption safety is a separate assessment.", ["Dissolved oxygen", "pH and free ammonia"],
+         "Use habitat measurements to assess conditions for aquatic life and fisheries.", ["Dissolved oxygen", "pH and free ammonia"],
          "Measure dissolved oxygen, pH and ammonia and review local habitat conditions before concluding that the water supports aquatic life or fisheries."),
     ]
     for identifier, title, topic, query, allowed, description, missing, action in use_rules:
         identifiers = evidence(topic, query, allowed)
-        uses.append(dict(id=identifier, title=title, status="not_established", label="Suitability not established", summary=description, missing_tests=missing,
+        uses.append(dict(id=identifier, title=title, status="not_established", label="Use checks pending", summary=description, missing_tests=missing,
             action=action if identifiers else "Reference-backed guidance is withheld because no matching verified passage was retrieved.", evidence_ids=identifiers,
             evidence_note="General guidance identifies the measurements needed for this use. The uploaded observations do not supply those measurements, so no suitability clearance is issued.",
             evidence_status="reference_available" if identifiers else "no_reference"))
@@ -372,7 +411,7 @@ def assess_water(df: pd.DataFrame, knowledge=None, zone_id="all", as_of=None) ->
         missing_tests=["Satellite pixel quality flags" ] if "valid_pixel_fraction" not in current_rows or current_rows.valid_pixel_fraction.isna().any() else [],
         action="Inspect the dated imagery, quality flags and sampling pattern alongside the index history." if monitoring_ids else "Reference-backed interpretation guidance is withheld because no matching verified passage was retrieved.",
         evidence_ids=monitoring_ids, evidence_note="References describe optical signals and observation quality. Monitoring availability is based on the uploaded data, not on a water-safety determination.", evidence_status="reference_available" if monitoring_ids else "no_reference"))
-    _use_preliminary(uses, preliminary)
+    _use_preliminary(uses, preliminary, observations)
     precautions = []
 
     def precaution(identifier, title, priority, action, why, trigger, topic, query, allowed):

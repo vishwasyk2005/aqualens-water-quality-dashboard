@@ -136,9 +136,9 @@
   },
   {
     "source_id": "cpcb-designated-uses",
-    "title": "CPCB: Water quality criteria for designated uses",
-    "url": "https://cpcb.gov.in/water-quality-criteria/",
-    "date": "2019-10-11",
+    "title": "CPCB: Water quality criteria for designated uses (Annexure I)",
+    "url": "https://cpcb.nic.in/wqm/Ind-Guidelines-RestWaterBodies.pdf",
+    "date": null,
     "assessment_topics": [
       "drinking",
       "recreation",
@@ -146,9 +146,9 @@
       "aquatic_life",
       "precautions"
     ],
-    "text": "Paraphrase: CPCB distinguishes drinking-water sources, organised outdoor bathing, wildlife and fisheries, and irrigation uses. Bathing criteria include coliform bacteria, pH, dissolved oxygen and biochemical oxygen demand. Wildlife and fisheries criteria include pH, dissolved oxygen and free ammonia. Irrigation criteria include pH, electrical conductivity, sodium adsorption ratio and boron. Drinking-source categories include treatment or disinfection requirements; they are not approval to drink untreated surface water.",
-    "applicability": "Indian designated-best-use reference. NDWI and uncalibrated turbidity/chlorophyll proxies do not supply these criteria. No A-E class is assigned here; the relevant laboratory measurements and local authority assessment are absent.",
-    "verified_on": "2026-10-27",
+    "text": "Paraphrase: CPCB distinguishes drinking-water sources, organised outdoor bathing, wildlife and fisheries, and irrigation uses. Bathing criteria include faecal coliforms, faecal streptococci, pH, dissolved oxygen and biochemical oxygen demand. Wildlife and fisheries criteria include pH, dissolved oxygen and free ammonia. Irrigation criteria include pH, electrical conductivity, sodium adsorption ratio and boron. Drinking-source categories include treatment or disinfection requirements.",
+    "applicability": "Indian designated-best-use criteria in Annexure I. Use the applicable field and laboratory results and official local assessment when interpreting these criteria.",
+    "verified_on": "2026-11-23",
     "parameters": [
       "all"
     ],
@@ -204,5 +204,18 @@
     "sensors": [
       "all"
     ]
+  },
+  {
+    "source_id": "esa-lake-observations",
+    "title": "ESA Lakes CCI: Lake products v3.0",
+    "url": "https://climate.esa.int/en/projects/lakes/data/",
+    "date": "2026-03-18",
+    "verified_on": "2026-11-23",
+    "parameters": ["lake_surface_temp_c", "tsm_mg_l"],
+    "seasons": ["all"],
+    "sensors": ["all"],
+    "assessment_topics": ["monitoring"],
+    "text": "Paraphrase: ESA Lakes CCI provides satellite lake surface temperature and total suspended matter estimates on a roughly one-kilometre grid. Available observations depend on scene quality and the local extent of open water.",
+    "applicability": "Source context for ESA Lakes CCI lake observations. An uploaded value needs its own source identifier to verify product provenance."
   }
 ]

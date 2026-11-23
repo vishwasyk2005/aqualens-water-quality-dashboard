@@ -20,6 +20,8 @@ import pandas as pd
 from aqualens.data import load_demo, load_data, zones_summary, PARAMETERS
 from aqualens.alerts import detect_alerts, current_condition, ALERT_POLICY
 from aqualens.assessment import assess_water
+from aqualens.monitoring import monitor_satellite, project_satellite
+from aqualens.prophet_model import prophet_available
 from aqualens.forecast import dataset_fingerprint, forecast_zones, train_models
 from aqualens.evidence import load_knowledge, parse_knowledge, retrieve_evidence, explain_alert, evaluate_retrieval
 
@@ -52,8 +54,9 @@ def clean(value):
 
 
 class Dashboard:
-    def __init__(self, root=ROOT):
+    def __init__(self, root=ROOT, *, use_custom_models=True):
         self.root = Path(root)
+        self.use_custom_models = use_custom_models
         self.datasets = OrderedDict()
         self.lock = threading.RLock()
         self.training_lock = threading.Lock()
@@ -67,6 +70,11 @@ class Dashboard:
         self.modis = load_data(data_path)
         self.modis[1]['filename'] = 'MODIS_Lake_Features_NDWI_Turbidity_Chlorophyll_2020_2025_.csv'
         self.demo = self.modis  # Compatibility alias; never silently use synthetic data.
+        supplemental_path = self.root / 'data' / 'esa_vembanad_monitoring.csv.gz'
+        self.supplemental = (
+            pd.read_csv(supplemental_path, parse_dates=['date'])
+            if supplemental_path.is_file() else None
+        )
 
     def dataset(self, key='modis'):
         if key in ('modis', 'demo'):
@@ -84,9 +92,11 @@ class Dashboard:
                 raise APIError('Evidence collection expired or unknown.',404)
             return self.collections[evidence_id]
 
-    def checkpoint(self, df):
+    def checkpoint(self, df, *, bundled=False):
         fingerprint = dataset_fingerprint(df)
-        candidates = [self.root/'models'/'custom'/fingerprint, self.root/'models']
+        candidates = [self.root/'models']
+        if not bundled and self.use_custom_models:
+            candidates.insert(0, self.root/'models'/'custom'/fingerprint)
         for directory in candidates:
             meta = directory/'evaluation.json'
             checkpoint = directory/'det_v2.pt'
@@ -160,6 +170,40 @@ class Dashboard:
         paths=[directory/name for name in ('summary.json','heldout_predictions.csv','det_historical.pt')]
         return tuple((path.stat().st_mtime_ns,path.stat().st_size) if path.is_file() else None for path in paths)
 
+    def benchmark_signature(self):
+        directory = self.root / 'models' / 'model_selection'
+        return tuple(
+            (path.stat().st_mtime_ns, path.stat().st_size) if path.is_file() else None
+            for path in (directory / 'benchmark.json', directory / 'predictions.csv')
+        )
+
+    def model_benchmark(self, key='modis', fingerprint=None):
+        df,_ = self.dataset(key)
+        fingerprint = fingerprint or dataset_fingerprint(df)
+        signature = self.benchmark_signature()
+        cache_key = ('model_benchmark', fingerprint, signature)
+        with self.lock:
+            if cache_key in self.historical_cache:
+                return self.historical_cache[cache_key]
+        try:
+            directory = self.root / 'models' / 'model_selection'
+            saved = json.loads((directory / 'benchmark.json').read_text(encoding='utf-8')) if all(signature) else {}
+            if saved.get('available') and saved.get('fingerprint') == fingerprint:
+                benchmark = dict(saved, saved_history=True)
+            elif key in ('modis', 'demo'):
+                benchmark = dict(available=False, reason='The bundled model comparison is unavailable.')
+            else:
+                from aqualens.model_selection import fit_forecast_policy
+                benchmark = dict(fit_forecast_policy(df), saved_history=False)
+        except (ValueError, OSError, RuntimeError) as exc:
+            benchmark = dict(available=False, reason=str(exc))
+        benchmark = clean(benchmark)
+        with self.lock:
+            self.historical_cache[cache_key] = benchmark
+            while len(self.historical_cache) > 10:
+                self.historical_cache.popitem(last=False)
+        return benchmark
+
     def historical_status(self,key='modis',fingerprint=None):
         """Read provenance without importing Torch or running a forecast."""
         df,_=self.dataset(key)
@@ -226,8 +270,11 @@ class Dashboard:
                 r2=float(1-(error**2).sum()/denominator) if denominator>0 else None,n=int(len(a))))
         return clean(records)
 
-    def backtest(self,key='modis',zone=None,horizon_days=None,parameter=None):
+    def backtest(self,key='modis',zone=None,horizon_days=None,parameter=None,model='det'):
         """Serve frozen pre-2022 DET predictions; production weights are never used."""
+
+        if model != 'det':
+            return self.comparison_backtest(key, zone, horizon_days, parameter, model)
         if horizon_days is not None and (isinstance(horizon_days,bool) or not isinstance(horizon_days,int) or horizon_days not in (8,16,32)):
             raise APIError('Historical validation horizon_days must be 8, 16 or 32 (approximate native observation horizons).')
         if parameter not in (None,'',*PARAMETERS):raise APIError('Unknown water parameter.')
@@ -295,6 +342,56 @@ class Dashboard:
             selection=dict(zone=zone,horizon_days=horizon_days,parameter=parameter or None),
             metric_scope='Selected zone' if zone else 'Pooled observed zone-target pairs; whole-lake rows excluded from pooling'))
 
+    def comparison_backtest(self, key, zone, horizon_days, parameter, model):
+        reference = self.backtest(key, zone, horizon_days, parameter)
+        benchmark = self.model_benchmark(key)
+        if not benchmark.get('available') or not benchmark.get('saved_history'):
+            return dict(reference, available=False, rows=[], metrics=[], metrics_by_zone=[],
+                        reason='No saved comparison traces for this dataset.')
+        selected = benchmark['selected_model'] if model == 'auto' else model
+        candidates = {item['id']: item['name'] for item in benchmark['models']}
+        if selected not in candidates:
+            raise APIError('Unknown comparison model.')
+        if not reference['available']:
+            return reference
+        keys = ['zone_id', 'parameter', 'origin_date', 'target_date', 'horizon_days']
+        signature = ('comparison_rows', self.benchmark_signature())
+        with self.lock:
+            pairs = self.historical_cache.get(signature)
+        try:
+            if pairs is None:
+                pairs = pd.read_csv(self.root / 'models' / 'model_selection' / 'predictions.csv', dtype={'zone_id': str})
+                if pairs.duplicated(['model', *keys]).any():
+                    raise ValueError('Duplicate forecast pairs.')
+                with self.lock:
+                    self.historical_cache[signature] = pairs
+                    while len(self.historical_cache) > 10:
+                        self.historical_cache.popitem(last=False)
+            if not reference['rows']:
+                return dict(reference, model=selected, model_name=candidates[selected])
+            expected = pd.DataFrame(reference['rows']).set_index(keys)
+            indexed = pairs.loc[pairs.model.eq(selected)].set_index(keys)
+            aligned = indexed.reindex(expected.index)
+            if not np.allclose(aligned['actual'], expected['actual'], rtol=1e-10, atol=1e-12) or not np.isfinite(aligned['prediction']).all():
+                raise ValueError('Comparison readings do not match the recorded DET benchmark targets.')
+            expected['det_prediction'] = expected['prediction']
+            expected['prediction'] = aligned['prediction']
+            expected['model'] = selected
+            expected['model_name'] = candidates[selected]
+            expected['error'] = expected['prediction'] - expected['actual']
+            expected['absolute_error'] = expected['error'].abs()
+            rows = clean(expected.reset_index())
+            metric_rows = rows if zone else [row for row in rows if row['zone_id'] != 'all']
+            metadata = dict(reference['metadata'], model_family=candidates[selected],
+                            selected_model=selected, selected_model_name=candidates[selected],
+                            comparison_method=benchmark.get('method'), retrospective=True)
+            return dict(reference, model=selected, model_name=candidates[selected], metadata=metadata,
+                        rows=rows, metrics=self.historical_metrics(metric_rows),
+                        metrics_by_zone=self.historical_metrics(rows, True))
+        except (OSError, ValueError, KeyError, TypeError) as exc:
+            return dict(reference, available=False, rows=[], metrics=[], metrics_by_zone=[],
+                        reason='The model comparison could not be aligned with recorded targets: ' + str(exc))
+
     def assessment(self,key='modis',zone='all',evidence_id=None,as_of=None):
         df,_ = self.dataset(key)
         try:
@@ -304,24 +401,74 @@ class Dashboard:
         except (ValueError,TypeError) as exc:
             raise APIError(str(exc)) from None
 
+    def monitoring(self, key='modis', zone='all', as_of=None, model=None, evidence_id=None):
+        df, _ = self.dataset(key)
+        try:
+            observation = monitor_satellite(df, zone=zone, as_of=as_of,
+                                            supplemental=self.supplemental if key in ('modis', 'demo') else None,
+                                            knowledge=self.knowledge(evidence_id))
+        except (ValueError, TypeError) as exc:
+            raise APIError(str(exc)) from None
+        result = dict(observation=observation)
+        if not model:
+            return clean(result)
+        if not observation['date'] or pd.Timestamp(observation['date']) != pd.to_datetime(df.date).max().normalize():
+            return clean(dict(result, forecast_error='Condition forecasts begin at the latest recorded source date.'))
+        try:
+            forecast = self.forecast(key, model, 32)
+        except APIError as exc:
+            if exc.status != 409:
+                raise
+            return clean(dict(result, forecast_error=str(exc)))
+        result['projection'] = self.monitoring_projection(key, df, observation, forecast)
+        return clean(result)
+
+    def monitoring_projection(self, key, df, observation, forecast):
+        effective = forecast['metadata'].get('selected_model', forecast['model'])
+        rows = forecast['rows']
+        if observation['zone_id'] == 'all' and not any(row['zone_id'] == 'all' for row in rows):
+            rows = rows + self.lake_forecasts(df, rows)
+        benchmark = self.model_benchmark(key)
+        return project_satellite(observation, rows, metrics=benchmark.get('metrics', []), model=effective)
+
     def bootstrap(self,key='modis',evidence_id=None):
         df,report = self.dataset(key)
         knowledge = self.knowledge(evidence_id)
         checkpoint,_=self.checkpoint(df)
         fingerprint=dataset_fingerprint(df)
-        signature=(key,fingerprint,checkpoint.stat().st_mtime_ns if checkpoint else None,evidence_id,self.historical_signature())
+        signature=(key,fingerprint,checkpoint.stat().st_mtime_ns if checkpoint else None,evidence_id,self.historical_signature(),self.benchmark_signature())
         with self.lock:
             cached=self.bootstrap_cache.get(signature)
             if cached is not None:
                 self.bootstrap_cache.move_to_end(signature)
                 return cached
         evaluation = self.evaluation(key)
-        water_assessments=[assess_water(df,knowledge=knowledge,zone_id=zone) for zone in ['all']+sorted(df.zone_id.astype(str).unique())]
+        zone_ids = ['all'] + sorted(df.zone_id.astype(str).unique())
+        water_assessments = [assess_water(df, knowledge=knowledge, zone_id=zone) for zone in zone_ids]
+        supplemental = self.supplemental if key in ('modis', 'demo') else None
+        satellite_monitoring = {
+            zone: monitor_satellite(df, zone=zone, knowledge=knowledge, supplemental=supplemental)
+            for zone in zone_ids
+        }
         columns=[c for c in ['date','lake_id','zone_id','zone_name','cell_id','lat','lon',*PARAMETERS,*[p+'_raw' for p in PARAMETERS],*[p+'_is_observed' for p in PARAMETERS],'ndwi_domain_invalid','valid_pixel_fraction','is_observed','source_kind','sensor','rainfall_mm','temp_c'] if c in df]
+        benchmark = self.model_benchmark(key, fingerprint)
+        models = self.models(df)
+        needs_det = benchmark.get('selected_model') in ('det', 'consensus')
+        has_prophet = any(row['id'] == 'prophet' for row in benchmark.get('models', []))
+        prophet_ready = has_prophet and prophet_available()
+        if has_prophet:
+            models.append(dict(id='prophet', name='Prophet', available=prophet_ready,
+                               reason='' if prophet_ready else 'Install the project requirements to run Prophet.'))
+        auto_ready = (benchmark.get('available') and (not needs_det or models[0]['available'])
+                      and (benchmark.get('selected_model') != 'prophet' or prophet_ready))
+        models.append(dict(id='auto', name=benchmark.get('selected_model_name') or 'Auto model selection',
+                           available=bool(auto_ready),
+                           reason='' if auto_ready else benchmark.get('reason') or 'No compatible selected forecaster.'))
         result=clean(dict(dataset='modis' if key=='demo' else key,report=report,observations=df[columns],zones=zones_summary(df),
-             alerts=detect_alerts(df),condition=current_condition(df),models=self.models(df),evaluation=evaluation['rows'],
+             alerts=detect_alerts(df),condition=current_condition(df),models=models,model_benchmark=benchmark,evaluation=evaluation['rows'],
              evaluation_meta=evaluation['metadata'],evaluation_by_zone=evaluation.get('by_zone',[]),knowledge=knowledge,evidence_id=evidence_id,
              retrieval_metrics=evaluate_retrieval(knowledge),alert_policy=ALERT_POLICY,water_assessments=water_assessments,
+             satellite_monitoring=satellite_monitoring,
              historical_validation=self.historical_status(key,fingerprint)))
         with self.lock:
             self.bootstrap_cache[signature]=result
@@ -355,14 +502,14 @@ class Dashboard:
                 self.collections.popitem(last=False)
         return dict(evidence_id=key,records=records,knowledge=records,count=len(records))
 
-    def forecast(self,key='modis',model='det',horizon=32):
-        """Only DET predicts; missing/incompatible weights never trigger a fallback."""
+    def forecast(self,key='modis',model='det',horizon=32,*,bundled=False):
+        """Serve a selected forecaster or an explicit DET reference run."""
         df,_ = self.dataset(key)
-        if model != 'det':
-            raise APIError('DET is the only supported forecasting model.')
         if isinstance(horizon,bool) or not isinstance(horizon,int) or not 1 <= horizon <= 730:
             raise APIError('Forecast horizon must be an integer from 1 to 730 days.')
-        checkpoint,summary = self.checkpoint(df)
+        if model != 'det':
+            return self.selected_forecast(key, df, horizon, model)
+        checkpoint,summary = self.checkpoint(df,bundled=bundled)
         if not checkpoint or not self.has_torch():
             raise APIError('Train DET on this dataset before forecasting; no compatible checkpoint is available.',409)
         signature=(str(checkpoint),checkpoint.stat().st_mtime_ns,horizon)
@@ -384,7 +531,82 @@ class Dashboard:
             self.cached[('forecast',signature)]=result
         return result
 
-    def predict_date(self,key,target):
+    def selected_forecast(self, key, df, horizon, model='auto'):
+        benchmark = self.model_benchmark(key)
+        if not benchmark.get('available'):
+            raise APIError(benchmark.get('reason') or 'A forecast cannot be selected for this dataset.', 409)
+        selected = benchmark['selected_model'] if model == 'auto' else model
+        candidates = {item['id']: item['name'] for item in benchmark['models']}
+        if selected not in candidates:
+            raise APIError('Unknown forecasting model.')
+        name = candidates[selected]
+        bundled = benchmark.get('saved_history', False)
+        checkpoint,_ = self.checkpoint(df, bundled=bundled) if selected in ('det', 'consensus') else (None, {})
+        if selected == 'consensus' and (not checkpoint or not self.has_torch()):
+            raise APIError('The selected consensus model needs a compatible DET checkpoint and PyTorch.', 409)
+        cache_key = ('selected_forecast', benchmark['fingerprint'], self.benchmark_signature(), model, horizon,
+                     checkpoint.stat().st_mtime_ns if checkpoint else None)
+        with self.lock:
+            cached = self.cached.get(cache_key)
+        if cached is not None:
+            return cached
+        if selected == 'det':
+            reference = self.forecast(key, 'det', horizon, bundled=bundled)
+            zone_rows = reference['rows']
+            metadata = dict(reference['metadata'])
+        else:
+            from aqualens.model_selection import forecast_selected
+            try:
+                zone_rows = clean(forecast_selected(df, horizon, benchmark, det_checkpoint_path=checkpoint, model=selected))
+            except (ValueError, RuntimeError, OSError, KeyError) as exc:
+                raise APIError('The selected model could not forecast these observations: ' + str(exc), 409) from exc
+            if not zone_rows:
+                raise APIError('No usable predictions could be produced from these observations.', 409)
+            overall = [row for row in benchmark.get('metrics', [])
+                       if row['model'] == selected and row['zone_id'] == 'all' and row.get('r2') is not None]
+            weak = sum(row['r2'] < 0 for row in overall)
+            daily_basis = ('Prophet predicts each calendar day directly.' if selected == 'prophet'
+                           else 'Daily values interpolate observation-step anchors.')
+            metadata = dict(training={'fit_partition': 'Forecast model fitted using available historical observations'},
+                            max_validated_horizon_days=32, latest_observation=pd.to_datetime(df.date).max().isoformat(),
+                            uncertainty=f'Zone bands summarize historical validation errors; refit coverage is unverified. {daily_basis} Beyond 32 days, results are experimental and have no bands.',
+                            model_quality=dict(evaluated=bool(overall), metric_count=len(overall), negative_r2_count=weak,
+                                               status='Mixed historical skill' if weak else 'Historically evaluated' if overall else 'Not scored for the whole lake',
+                                               warning='Some whole-lake retrospective R² scores are below zero.' if weak else None),
+                            extrapolated=horizon > 32)
+        zone_rows = [dict(row, model=selected, model_name=name) for row in zone_rows if row['zone_id'] != 'all']
+        metadata.update(selected_model=selected, selected_model_name=name,
+                        selection_method=benchmark.get('method'), validation_end=benchmark.get('validation_end'))
+        result = clean(dict(model=model, rows=zone_rows + self.lake_forecasts(df, zone_rows), horizon_days=horizon, metadata=metadata))
+        with self.lock:
+            self.cached[cache_key] = result
+            auto_keys = [item for item in self.cached if item[0] == 'selected_forecast']
+            for expired in auto_keys[:-18]:
+                self.cached.pop(expired, None)
+        return result
+
+    @staticmethod
+    def lake_forecasts(df, rows):
+        from aqualens.backtest import _source_values
+        latest = df.loc[pd.to_datetime(df.date).eq(pd.to_datetime(df.date).max())]
+        valid = _source_values(latest)
+        weights = {p: latest.loc[valid[p].notna()].groupby('zone_id').size().to_dict() for p in PARAMETERS}
+        groups = {}
+        for row in rows:
+            weight = weights[row['parameter']].get(row['zone_id'], 0)
+            value = row['prediction']
+            if weight and value is not None and np.isfinite(value):
+                groups.setdefault((row['date'], row['parameter']), []).append((row, weight))
+        combined = []
+        for entries in groups.values():
+            mass = sum(weight for _, weight in entries)
+            average = sum(row['prediction'] * weight for row, weight in entries) / mass
+            combined.append(dict(entries[0][0], zone_id='all', prediction=average, lower=None, upper=None,
+                                 origin_observed_count=mass, zones_in_summary=len(entries),
+                                 interval_basis='Whole-lake forecasts use the latest parameter-valid source observation counts. No calibrated lake interval.'))
+        return combined
+
+    def predict_date(self,key,target,model='det'):
         df,_=self.dataset(key)
         try:
             if not isinstance(target,str) or not re.fullmatch(r'\d{4}-\d{2}-\d{2}',target):
@@ -395,11 +617,11 @@ class Dashboard:
         except (ValueError,TypeError):
             raise APIError('date must use YYYY-MM-DD.') from None
         horizon=int((when-pd.to_datetime(df.date).max().normalize()).days)
-        result=self.forecast(key,'det',horizon)
+        result=self.forecast(key,model,horizon)
         rows=[row for row in result['rows'] if pd.Timestamp(row['date']).normalize()==when]
-        return dict(date=when.date().isoformat(),rows=rows,model='det',horizon_days=horizon,metadata=result['metadata'])
+        return dict(date=when.date().isoformat(),rows=rows,model=model,horizon_days=horizon,metadata=result['metadata'])
 
-    def explain(self,key,zone,parameter,evidence_id=None,horizon_days=32,forecast_date=None):
+    def explain(self,key,zone,parameter,evidence_id=None,horizon_days=32,forecast_date=None,model='det'):
         if parameter not in PARAMETERS:
             raise APIError('Unknown water parameter.')
         df,_ = self.dataset(key)
@@ -412,10 +634,23 @@ class Dashboard:
         selection = alerts[(alerts.zone_id==zone)&(alerts.parameter==parameter)]
         if selection.empty:
             raise APIError('Unknown zone.',404)
-        forecast_summary=dict(available=False,reason='No compatible trained DET checkpoint.')
+        forecast_summary=dict(available=False,reason='Forecast unavailable for the selected model or location.')
         checkpoint,_=self.checkpoint(df)
-        if checkpoint and self.has_torch():
-            forecasts=self.predict_date(key,forecast_date) if forecast_date else self.forecast(key,'det',horizon_days)
+        try:
+            forecasts = None
+            if model != 'det' or (checkpoint and self.has_torch()):
+                forecasts=self.predict_date(key,forecast_date,model) if forecast_date else self.forecast(key,model,horizon_days)
+        except APIError as exc:
+            if exc.status != 409:
+                raise
+            forecast_summary['reason'] = str(exc)
+        if forecasts:
+            if model != 'det':
+                selected = [row for row in forecasts['rows'] if row['zone_id'] == zone and row['parameter'] == parameter]
+                if selected:
+                    forecast_summary = dict(selected[-1], available=True, current_value=selection.iloc[0]['value'],
+                                            max_validated_horizon_days=forecasts['metadata']['max_validated_horizon_days'])
+                return clean(explain_alert(selection.iloc[0].to_dict(), explanation_df, self.knowledge(evidence_id), forecast_summary=forecast_summary))
             selected=[row for row in forecasts['rows'] if (zone=='all' or row['zone_id']==zone) and row['parameter']==parameter]
             if selected and zone=='all':
                 last_date=max(row['date'] for row in selected)
@@ -500,20 +735,22 @@ class Dashboard:
         key = arg('dataset','modis')
         if path=='/api/bootstrap': return self.bootstrap(key,arg('evidence_id'))
         if path=='/api/assessment': return self.assessment(key,arg('zone','all'),arg('evidence_id'),arg('as_of'))
+        if path=='/api/monitoring': return self.monitoring(key,arg('zone','all'),arg('as_of'),arg('model'),arg('evidence_id'))
         if path=='/api/evaluation': return self.evaluation(key)
         if path=='/api/backtest':
             try: horizon=int(arg('horizon_days')) if arg('horizon_days') is not None else None
             except (ValueError,TypeError):raise APIError('Historical validation horizon_days must be 8, 16 or 32.') from None
-            return self.backtest(key,arg('zone'),horizon,arg('parameter'))
+            return self.backtest(key,arg('zone'),horizon,arg('parameter'),arg('model','det'))
+        if path=='/api/model-benchmark': return self.model_benchmark(key)
         if path=='/api/forecast':
             try: horizon=int(arg('horizon_days')) if arg('horizon_days') is not None else int(arg('horizon','4'))*7
             except (ValueError,TypeError): raise APIError('horizon_days must be an integer.') from None
             return self.forecast(key,arg('model','det'),horizon)
-        if path=='/api/predict-date': return self.predict_date(key,arg('date'))
+        if path in ('/api/predict-date','/api/predict'): return self.predict_date(key,arg('date'),arg('model','det'))
         if path=='/api/explain':
             try: horizon=int(arg('horizon_days','32'))
             except (ValueError,TypeError): raise APIError('horizon_days must be an integer.') from None
-            return self.explain(key,arg('zone','Z1'),arg('parameter','turbidity_proxy'),arg('evidence_id'),horizon,arg('forecast_date'))
+            return self.explain(key,arg('zone','Z1'),arg('parameter','turbidity_proxy'),arg('evidence_id'),horizon,arg('forecast_date'),arg('model','det'))
         if path=='/api/evidence':
             parameter=arg('parameter')
             if parameter not in (None,'',*PARAMETERS): raise APIError('Unknown water parameter.')

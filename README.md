@@ -1,6 +1,6 @@
-# AquaLens: DET water observatory
+# AquaLens: Satellite water observatory
 
-A custom interactive dashboard with a local Python analysis engine. Upload satellite-derived CSV observations, assess the latest recorded condition and possible water uses, review precautions and their retrieved evidence, then explore **DET-only** forecasts. The primary Water assessment page explains where missing tests prevent a suitability decision. See [WATER_ASSESSMENT.md](WATER_ASSESSMENT.md).
+A custom interactive dashboard with a local Python analysis engine. Upload satellite-derived CSV observations, assess the latest recorded condition and possible water uses, review precautions and their retrieved evidence, then explore forecasts selected by chronological comparison. Forecast candidates include Prophet from the original prototype and DET, which can be retrained on an uploaded CSV. See [MODEL_COMPARISON.md](MODEL_COMPARISON.md) and [WATER_ASSESSMENT.md](WATER_ASSESSMENT.md).
 
 The included DET was trained on the supplied MODIS-named CSV. This workspace uses real supplied observations, not synthetic demo measurements. The file's satellite acquisition provenance and parameter formulas have not been independently verified.
 
@@ -16,18 +16,18 @@ python -m venv .venv
 .\.venv\Scripts\python server.py --port 8765
 ```
 
-`requirements-training.txt` includes NumPy/Pandas through `requirements.txt`, plus PyTorch. CPU PyTorch is sufficient. The frontend has no build step or required CDN libraries. The API binds to `127.0.0.1`.
+`requirements-training.txt` includes NumPy, Pandas and Prophet through `requirements.txt`, plus PyTorch. CPU PyTorch is sufficient. The frontend has no build step or required CDN libraries. The API binds to `127.0.0.1`.
 
 ## Interactive workspace
 
-The redesigned sidebar uses plain page names and a compact page selector on narrow screens. See [UI_GUIDE.md](UI_GUIDE.md) for navigation and the forecast workflow.
+The new frontend uses top navigation for Monitor, Map, Forecast, Accuracy, Sources, and Data. See [UI_GUIDE.md](UI_GUIDE.md) for the workflow.
 
 - **Water assessment:** latest recorded lake/zone condition, preliminary interpretation of all three indicator trends with qualitative confidence, five interactive use categories with practical screening guidance, confirmation requirements, conditional precautions, numbered source evidence, and a downloadable assessment. Proxy-only data does not clear physical water uses.
 - **Overview:** current-condition cards, historical trends, parameter controls, a geographic measurement map, zone comparisons, and evidence for the latest observations.
 - **Interactive map:** a dedicated Leaflet map with satellite and street basemaps, drag/pan, wheel or button zoom, full-screen expansion, exact observation-date selection, parameter and zone filters, and clickable measurement details.
-- **DET Forecasts:** zone or lake summary, observed-versus-predicted charts, 30-730-day horizon controls, a future-date picker for all three parameters, empirical zone intervals where available, forecast CSV download, and evidence-linked explanations.
-- **Historical validation:** three actual-versus-DET graphs for held-out 2022–early-2023 readings, independent zone/horizon/date controls, exact forecast-origin inspection, MAE/RMSE/R², CSV downloads and a separate pre-2022 training audit.
-- **Zone intelligence:** selected-zone measurements, history, monitoring status, DET outlook, and source-backed interpretation.
+- **Future outlook:** choose Auto, Prophet, DET, or another evaluated model. Explore forecasts by date and location, download estimates, and review historical errors for the selected model. Projections beyond 32 days are experimental.
+- **Check accuracy:** compare each benchmark candidate against the same recorded 2022–early-2023 readings. Filter by location, indicator and observation horizon, and inspect actual readings, predictions, errors and forecast origins.
+- **Zone intelligence:** selected-zone measurements, history, monitoring status, forecasts where available, and source-backed interpretation.
 - **Alerts:** filters for exploratory historical-change signals and links to the affected zones.
 - **Evidence:** parameter-aware reference search, source passages and applicability, and import of a custom JSON reference collection.
 - **Data:** CSV upload, processed records, quality and provenance warnings, hierarchy details, and observation downloads.
@@ -63,7 +63,7 @@ Processing validates dates and coordinates, removes duplicate date/cell rows, pr
 
 Missing pixel-quality metadata remains unknown. Valid measurements can still support statistical change analysis, qualified by unknown quality and changing spatial sampling. The system never treats missing QA as verified clear imagery.
 
-The browser accepts files below 11 MB to fit the server's 12 MB JSON-request limit. Up to five uploaded datasets are held in memory; restarting the API discards those sessions. Saved checkpoints remain under `models/custom/<fingerprint>/`. Reuploading the matching original CSV can reuse its compatible checkpoint. Changed or incompatible observations require their own DET training; there is no alternative-model fallback.
+The browser accepts files below 11 MB to fit the server's 12 MB JSON-request limit. Up to five uploaded datasets are held in memory; restarting the API discards those sessions. Saved DET checkpoints remain under `models/custom/<fingerprint>/` and only match the dataset they were trained on. Auto compares lightweight candidates for sufficiently long new uploads using that upload's own chronological split. An upload with too little usable history can still be assessed and mapped.
 
 ## What "present condition" means
 
@@ -73,7 +73,7 @@ Stable, Watch, and Unusual describe robust deviation from the preceding 12 weeks
 
 ## Current DET architecture and training
 
-DET remains the sole forecasting family: ordered cell histories pass through a GRU and Child-Sum Tree-LSTM cell/zone/lake hierarchy. Six predefined regularized DET configurations were tested, using either exact observed-zone residual anchors or learned direct output heads. The selected model uses **direct heads, 12 historical observations, 24 hidden units, dropout 0.1, learning rate 0.001, weight decay 0.01 and epoch 54**.
+DET passes ordered cell histories through a GRU and Child-Sum Tree-LSTM cell/zone/lake hierarchy. Six predefined regularized DET configurations were tested, using either exact observed-zone residual anchors or learned direct output heads. The selected DET uses **direct heads, 12 historical observations, 24 hidden units, dropout 0.1, learning rate 0.001, weight decay 0.01 and epoch 54**.
 
 Coordinates are canonicalized to six decimal degrees before fitting grid boundaries. This prevents numerical jitter from moving the same physical sites between training cells. The supplied data now uses 28 stable model cells; zone targets remain the unchanged, valid observed source means.
 
@@ -92,6 +92,8 @@ Dashboard-created custom checkpoints are discovered under `models/custom/<finger
 
 ## Accuracy and uncertainty
 
+See [MODEL_COMPARISON.md](MODEL_COMPARISON.md) for the current comparison across forecasting families and the Auto selection. The paragraphs below describe the archived DET refinement and the explicit DET option.
+
 See [FORECAST_REFINEMENT_REPORT.md](FORECAST_REFINEMENT_REPORT.md) for all before/after results, unchanged-target checks and remaining weaknesses. The 8-day origin-weighted whole-lake turbidity RMSE fell from approximately **0.6404 to 0.3435**, but R² remains only about **0.112**. Whole-lake NDWI still has negative R² at 8/16 days. Some tasks worsen. The dashboard displays the selected location's own historical metrics, rather than substituting pooled zone scores for a lake-summary forecast.
 
 The validation selection score improved by only about **0.98%** over the archived DET on the same origin-safe pre-2022 comparison. This is not an accuracy percentage. Reliable future water-quality forecasting has not been established; the unknown retrieval algorithms, extreme proxy values and absent satellite QA remain limitations.
@@ -104,6 +106,7 @@ Zone bands are empirical nominal-80% absolute residual quantiles from the same v
 
 - `models/det_evaluation_v2.pt`: active format-v3, train-only refined evaluation weights; filename retained for compatibility.
 - `models/det_v2.pt`: active format-v3 all-history production refit.
+- `models/model_selection/`: chronological comparison report and exact recorded/predicted pairs by candidate.
 - `models/historical_validation/`: frozen historical checkpoint, exact comparison pairs and current scores.
 - `models/refinement_v3/`: locked pre-2022 six-candidate plan, validation scores, selected checkpoint and before/after audit.
 - `models/evaluation.json`, `evaluation.csv`, `evaluation_by_zone.csv`: active configuration, history, limitations, fingerprint and scores.
@@ -113,9 +116,9 @@ Zone bands are empirical nominal-80% absolute residual quantiles from the same v
 
 ## RAG evidence and explanations
 
-The evidence layer uses local, metadata-filtered **TF-IDF lexical retrieval** over curated source paraphrases, followed by deterministic evidence-linked explanations and candidate hypotheses. It does not train an LLM or implement generative Tree-of-Thought search. DET supplies the numbers; retrieval supplies supporting context.
+The evidence layer uses local, metadata-filtered **TF-IDF lexical retrieval** over curated source paraphrases, followed by deterministic evidence-linked explanations and candidate hypotheses. The selected forecast model supplies the prediction; retrieval supplies supporting context.
 
-Explanations connect the latest observation, its historical change, the selected DET forecast and relevant source passages. They never invent rainfall when the CSV lacks weather data or assert that a general reference proves a local cause. Source titles, URLs, dates where known, applicability and method provenance are retained. MODIS explanations filter out Sentinel-2-specific references. The MODIS QA reference describes general quality checks; it does not establish which MODIS product generated this CSV.
+Explanations connect the latest observation, its historical change, the selected forecast and relevant source passages. They never invent rainfall when the CSV lacks weather data or assert that a general reference proves a local cause. Source titles, URLs, dates where known, applicability and method provenance are retained. MODIS explanations filter out Sentinel-2-specific references. The MODIS QA reference describes general quality checks; it does not establish which MODIS product generated this CSV.
 
 Custom evidence imports are JSON lists of up to 200 passages. Each passage needs `source_id,title,url,text,applicability`; URLs must use HTTPS. Optional metadata includes `date,verified_on,parameters,seasons,sensors`. Omitted sensor tags default to `all`. Text is treated as evidence data, never executed as instructions. Imported collections are isolated to their local session.
 
@@ -123,6 +126,8 @@ Custom evidence imports are JSON lists of up to 200 passages. Each passage needs
 
 ```text
 GET /api/bootstrap?dataset=modis
+GET /api/model-benchmark?dataset=modis
+GET /api/forecast?dataset=modis&model=auto&horizon_days=30
 GET /api/forecast?dataset=modis&model=det&horizon_days=30
 GET /api/predict-date?dataset=modis&date=2023-03-01
 GET /api/explain?dataset=modis&zone=all&parameter=turbidity_proxy&horizon_days=32

@@ -1,0 +1,118 @@
+.ol-forecast-view .ol-forecast-context {
+  display: grid;
+  grid-template-columns: minmax(0,1fr) minmax(0,1fr) minmax(0,1.4fr);
+  gap: .25rem .5rem;
+  margin: 0 0 .65rem;
+  padding: .62rem .82rem;
+  border: 1px solid #dbe6db;
+  border-radius: 11px;
+  background: #edf3ea;
+}
+.ol-forecast-context > div { min-width: 0; line-height: 1.3; }
+.ol-forecast-context span,.ol-date-jumps > span {
+  display: block;
+  color: #4c6353;
+  font-size: .71rem;
+  font-weight: 730;
+  margin-bottom: .18rem;
+}
+.ol-forecast-context strong {
+  display: block;
+  color: #234032;
+  overflow-wrap: anywhere;
+  font-size: .82rem;
+  font-variant-numeric: tabular-nums;
+}
+.ol-forecast-view .ol-date-tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: .65rem 1.05rem;
+  padding: .72rem .86rem;
+  border: 1px solid var(--ol-seam);
+  border-radius: 11px;
+  background: white;
+  margin: 0 0 .76rem;
+}
+.ol-date-tools .ol-select { min-width: 170px; }
+.ol-date-jumps > div,.ol-forecast-recovery {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .38rem;
+}
+.ol-date-jumps button { border-radius: 7px; background: #f5f8f3; }
+.ol-date-jumps button[aria-pressed=true] {
+  color: #253b19;
+  background: #dff1cc;
+  border-color: #8cae65;
+  box-shadow: inset 0 0 0 1px #8cae65;
+}
+.ol-forecast-view .ol-readouts > div:last-child:not(:nth-child(2)) strong {
+  color: #dfebe0;
+  font-size: clamp(1.13rem,2.25vw,1.64rem);
+  align-self: end;
+}
+.ol-forecast-view .ol-chart-tools { display: flex; justify-content: end; margin-top: .8rem; }
+.ol-view .ol-chart-tools .ol-select { min-width: min(100%,226px); }
+.ol-view .ol-chart-tools .ol-select > span { color: #d4e5d9; }
+.ol-view .ol-chart-tools .ol-select select {
+  min-height: 36px;
+  border-color: #74978c;
+  background-color: #edf4ef;
+  font-size: .78rem;
+  padding-block: .35rem;
+}
+.ol-forecast-tag {
+  display: inline-block;
+  background: #eff6ec;
+  color: #345140;
+  border: 1px solid #d3e2d0;
+  border-radius: 6px;
+  padding: .16rem .44rem;
+  font-size: .72rem;
+  font-weight: 750;
+}
+.ol-forecast-tag[data-experimental=true] {
+  color: #754716;
+  background: #fbefda;
+  border-color: #e6cc9e;
+}
+.ol-detail-date {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .35rem .55rem;
+  color: #314f3d;
+  font-size: .85rem;
+  font-weight: 730;
+}
+.ol-forecast-view .ol-forecast-loading { min-height: 240px; }
+.ol-spinner {
+  width: 27px;
+  height: 27px;
+  border: 3px solid #dce8dc;
+  border-top-color: #4d754e;
+  border-radius: 50%;
+  animation: ol-spin .8s linear infinite;
+}
+@keyframes ol-spin { to { transform: rotate(360deg); } }
+.ol-forecast-recovery { justify-content: center; margin-top: .45rem; }
+.ol-view .ol-forecast-recovery a { margin-top: 0; }
+
+@media(max-width: 740px) {
+  .ol-forecast-view .ol-chart { min-height: 132px; }
+  .ol-forecast-view .ol-chart-tools { justify-content: start; }
+  .ol-forecast-view .ol-chart-tools .ol-select { grid-template-columns: auto minmax(0,1fr); align-items: center; }
+  .ol-forecast-view .ol-forecast-context { grid-template-columns: repeat(2,minmax(0,1fr)); gap: .42rem .6rem; }
+  .ol-forecast-view .ol-forecast-context > div:last-child { grid-column: 1 / -1; }
+}
+@media(max-width: 435px) {
+  .ol-forecast-view .ol-date-tools { padding: .62rem .65rem; }
+  .ol-forecast-view .ol-date-tools .ol-select { flex-basis: 100%; min-width: 0; }
+  .ol-forecast-view .ol-estimates { grid-template-columns: minmax(0,1fr); gap: 0; }
+  .ol-forecast-view .ol-estimate { grid-template-columns: minmax(0,1fr) auto; align-items: baseline; }
+  .ol-forecast-view .ol-estimate small { grid-column: 1 / -1; font-size: .72rem; }
+}
+@media(prefers-reduced-motion: reduce) {
+  .ol-spinner { animation: none; }
+}

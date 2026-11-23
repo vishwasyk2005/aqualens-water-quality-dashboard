@@ -174,11 +174,12 @@ def explain_alert(alert: dict, df: pd.DataFrame, knowledge: list[dict] | None = 
     if forecast_summary and forecast_summary.get("available"):
         predicted = forecast_summary.get("prediction")
         if _finite(predicted):
-            summary += f" DET forecasts {float(predicted):.4f} for {forecast_summary.get('date', 'the selected date')} in the uploaded parameter scale."
+            model_name = forecast_summary.get("model_name") or ("DET" if forecast_summary.get("model") == "det" else "The selected model")
+            summary += f" {model_name} forecasts {float(predicted):.4f} for {forecast_summary.get('date', 'the selected date')} in the uploaded parameter scale."
         if forecast_summary.get("is_extrapolation"):
             summary += " This selected horizon extends beyond the trained horizon and is experimental."
     elif forecast_summary:
-        summary += " DET forecasting requires a compatible trained checkpoint for this dataset."
+        summary += " " + (forecast_summary.get("reason") or "No forecast is available for this selection.")
     kinds = sorted(context.source_kind.dropna().astype(str).unique().tolist()) if "source_kind" in context else []
     return dict(summary=summary, current_condition=dict(as_of=when.isoformat(),value=alert.get("value"),baseline=alert.get("baseline"),status=alert.get("status",alert.get("severity")),reason=alert.get("reason"),coverage_unknown=bool(alert.get("coverage_unknown",not _finite(quality)))), forecast_summary=forecast_summary, hypotheses=hypotheses, sources=list(sources.values()), provenance={"as_of": when.isoformat(), "zone_id": str(alert["zone_id"]), "parameter": parameter, "source_kinds": kinds, "sensor_filter": sensor, "retrieval": "metadata-filtered TF-IDF cosine (lexical RAG)", "explanation_method": "deterministic evidence-linked hypothesis comparison; no LLM ToT search or causal attribution", "policy": dict(ALERT_POLICY), "evidence_status": "General reference paraphrases; publication dates unknown unless supplied. Local causes unconfirmed."})
 

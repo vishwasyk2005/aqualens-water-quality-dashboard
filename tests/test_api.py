@@ -56,7 +56,8 @@ class ServiceTests(unittest.TestCase):
         self.assertEqual(len(result['observations']),result['report']['rows'])
         self.assertEqual(len(result['zones']),6)
         self.assertEqual(len(result['alerts']),18)
-        self.assertEqual({m['id'] for m in result['models']},{'det'})
+        self.assertEqual({m['id'] for m in result['models']},{'det','auto','prophet'})
+        self.assertIn('seasonal_kernel', {model['id'] for model in result['model_benchmark']['models']})
         self.assertTrue(result['knowledge'])
         self.assertIn('condition',result)
         self.assertEqual(result['report']['source'],'legacy_upload')
@@ -104,7 +105,7 @@ class ServiceTests(unittest.TestCase):
             with self.assertRaises(APIError):self.app.predict_date('modis',target)
 
     def test_invalid_model_horizon_zone_rejected(self):
-        for model,horizon in [('mean_pool',32),('tree',32),('prophet',32),('ridge',32),('persistence',32),('det',0),('det',731)]:
+        for model,horizon in [('mean_pool',32),('tree',32),('det',0),('det',731),('seasonal_kernel',731),('prophet',731)]:
             with self.assertRaises(APIError): self.app.forecast('demo',model,horizon)
         with self.assertRaises(APIError): self.app.explain('demo','missing','ndwi')
 
